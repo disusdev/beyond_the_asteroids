@@ -1,0 +1,9 @@
+[submodule "external/raygui"]
+	path = external/raygui
+	url = git@github.com:disusdev/raygui.git
+[submodule "external/raylib"]
+	path = external/raylib
+	url = git@github.com:disusdev/raylib.git
+[submodule "external/box2c"]
+	path = external/box2c
+	url = git@github.com:disusdev/box2c.git

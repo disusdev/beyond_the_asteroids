@@ -1,0 +1,24 @@
+TODO: use cvec for event system
+TODO: button to load model from asset picker
+TODO: wrap mode repeat for block meshes
+TODO: asset picker
+TODO: mesh renderer inspector input box
+TODO: scene hierarchy panel
+TODO: skybox
+TODO: remade box2d into box3d
+
+FIX: double model_import
+FIX: hide entities picking
+
+
+
+DONE: add box2d
+DONE: add 3d text component
+DONE: add infinite grid
+DONE: add materials to the renderer
+DONE: use cvec as array pointer
+DONE: use meshes instead of model in renderer
+DONE: camera system
+DONE: scene system
+FIXED: issues with removing entities
+DONE: component system
