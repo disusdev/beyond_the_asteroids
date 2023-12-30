@@ -132,13 +132,22 @@ engine_create(t_app* app)
   component_system_init();
   scene_system_init();
   
+  
+
+  
+
   // SetTraceLogLevel(RL_LOG_ERROR);
   
-  // SetConfigFlags(FLAG_WINDOW_UNDECORATED);
+  SetConfigFlags(FLAG_WINDOW_UNDECORATED);
   InitWindow(app->window_size_x, app->window_size_y, app->name);
 
+  app->window_size_x = GetMonitorWidth(GetCurrentMonitor());
+  app->window_size_y = GetMonitorHeight(GetCurrentMonitor());
+
+  SetWindowSize(app->window_size_x, app->window_size_y);
+
   // SetWindowState(FLAG_WINDOW_HIGHDPI | FLAG_MSAA_4X_HINT | FLAG_VSYNC_HINT);
-  SetWindowState(FLAG_VSYNC_HINT | FLAG_WINDOW_RESIZABLE | FLAG_WINDOW_HIGHDPI | FLAG_MSAA_4X_HINT);
+  SetWindowState(FLAG_VSYNC_HINT | FLAG_FULLSCREEN_MODE | FLAG_WINDOW_HIGHDPI | FLAG_MSAA_4X_HINT);
 
   SetTargetFPS(60);
 }
