@@ -633,8 +633,8 @@ draw_wheal(t_buttons_wheal* wheal)
     f32 posY = start_y;
     f32 min_x = posX;
     f32 max_x = posX + text_size;
-    f32 min_y = posY;
-    f32 max_y = posY + font_size;
+    f32 min_y = posY - 30;
+    f32 max_y = posY + font_size + 30;
     if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT))
     {
       if (mouse_pos.x > min_x &&
