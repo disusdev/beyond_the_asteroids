@@ -618,9 +618,9 @@ update_wheal(t_buttons_wheal* wheal)
 void
 draw_wheal(t_buttons_wheal* wheal)
 {
-  Vector2 origin = (Vector2){ GetScreenWidth() - 60, GetScreenHeight() / 2 + 16 };
+  Vector2 origin = (Vector2){ GetScreenWidth() - 60, GetScreenHeight() / 2 };
   f32 start_x = origin.x;
-  f32 start_y = origin.y - 64 - (60 + 32) * wheal->current;
+  f32 start_y = origin.y - 64 - (60 + 64) * wheal->current;
 
   Vector2 mouse_pos = GetMousePosition();
   i32 mouse_hover = wheal->current;
@@ -659,7 +659,7 @@ draw_wheal(t_buttons_wheal* wheal)
     start_y += font_size + 60;
   }
 
-  start_y = origin.y - 64 - (60 + 32) * wheal->current;
+  start_y = origin.y - 64 - (60 + 64) * wheal->current;
   for (u32 i = 0; i < wheal->count; i++)
   {
     f32 font_size = 64 * (wheal->current == i ? 2 : 1);
