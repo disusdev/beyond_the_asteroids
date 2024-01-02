@@ -990,7 +990,7 @@ game_draw_ui()
     DrawText(hp_points_str, GetScreenWidth() / 2 - MeasureText(hp_points_str, 40) / 2, 20, 40, RAYWHITE);
 
     sprintf(hp_points_str, "FUEL: %.0f", ship->fuel);
-    DrawText(hp_points_str, GetScreenWidth() - MeasureText(hp_points_str, 40) - 20, 20, 40, RAYWHITE);
+    DrawText(hp_points_str, GetScreenWidth() - MeasureText(hp_points_str, 40) - 20, 20, 20, RAYWHITE);
 
     int fps = GetFPS();
     sprintf(hp_points_str, "%d", fps);
@@ -999,9 +999,17 @@ game_draw_ui()
     sprintf(hp_points_str, "%dHP", ship_hp->health);
     DrawText(hp_points_str, 20, 45, 20, ship_hp->is_dead ? RED : RAYWHITE);
 
-    Camera camera = camera_system_get_camera();
-    sprintf(hp_points_str, "[ %f %f %f ]", camera.position.x, camera.position.y, camera.position.z);
-    DrawText(hp_points_str, 20, 70, 20, RAYWHITE);
+    // Camera camera = camera_system_get_camera();
+    // sprintf(hp_points_str, "[ %f %f %f ]", camera.position.x, camera.position.y, camera.position.z);
+    // DrawText(hp_points_str, 20, 70, 20, RAYWHITE);
+
+    // Vector2 mouse_pos = GetMousePosition();
+    // Ray ray = GetMouseRay(mouse_pos, camera);
+    // Plane plane = (Plane) {Vector3Zero(), (Vector3){0,-1,0}};
+    // RayCollision coll = IntersectRayPlane(ray, plane);
+
+    // sprintf(hp_points_str, "[ %f %f ]", coll.point.x - camera.position.x, coll.point.z - camera.position.z);
+    // DrawText(hp_points_str, 20, 95, 20, RAYWHITE);
   } break;
   }
 
@@ -1044,6 +1052,9 @@ game_pre_render(f32 dt)
 
   Rectangle dest = { 0, 0, GetScreenWidth(), GetScreenHeight() };
 
+  f32 x_mult = 1 / 88.2;
+  f32 y_mult = 1 / 49.6;
+
   switch (state)
   {
   case GAME_STATE_MENU:
@@ -1054,7 +1065,7 @@ game_pre_render(f32 dt)
   } break;
   case GAME_STATE_GAME:
   {
-    Vector2 offset = (Vector2) {-pos.x/GetScreenWidth()*20, -pos.z/GetScreenHeight()*20};
+    Vector2 offset = (Vector2) {-pos.x * x_mult, -pos.z * y_mult};
     DrawTextureQuad(background, (Vector2) {1,1}, offset, dest, WHITE);
   } break;
   }
