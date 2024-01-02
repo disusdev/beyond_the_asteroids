@@ -36,6 +36,8 @@
 #include <systems/scene_system.h>
 #include <systems/shaders.h>
 
+#define START_FULL_SCREEN
+
 // #define RLIGHTS_IMPLEMENTATION
 // #include <rlights.h>
 
