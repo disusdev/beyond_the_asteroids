@@ -43,6 +43,7 @@ void
 on_death(t_co_ship* ship)
 {
   stop_music(MUSIC_SHIP_LOW_FUEL);
+  stop_music(MUSIC_SHIP_MOVE);
   ship->target = -1;
 }
 

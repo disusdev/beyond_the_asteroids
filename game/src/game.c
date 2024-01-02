@@ -990,7 +990,7 @@ game_draw_ui()
     DrawText(hp_points_str, GetScreenWidth() / 2 - MeasureText(hp_points_str, 40) / 2, 20, 40, RAYWHITE);
 
     sprintf(hp_points_str, "FUEL: %.0f", ship->fuel);
-    DrawText(hp_points_str, GetScreenWidth() - MeasureText(hp_points_str, 40) - 20, 20, 20, RAYWHITE);
+    DrawText(hp_points_str, GetScreenWidth() - MeasureText(hp_points_str, 20) - 20, 20, 20, RAYWHITE);
 
     int fps = GetFPS();
     sprintf(hp_points_str, "%d", fps);
