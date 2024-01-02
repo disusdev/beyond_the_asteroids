@@ -239,12 +239,23 @@ void end_move()
 static void
 create_pickup(Vector3 position)
 {
-  // if (GetRandomValue(0, 5) != 3) return;
-  i32 pickup_id = component_system_create_entity(-1);
-  component_system_set_local_transform(pickup_id, MatrixTranslate(position.x, position.y, position.z));
-  component_system_update_global_transform(pickup_id);
-  t_co_pickup* pickup = cast_ptr(t_co_pickup) component_system_create_component_ptr(pickup_id, "co_pickup");
-  pickup->fuel = 50;
+  if (GetRandomValue(0, 10) > 3) return;
+
+  int ent_id = component_system_pop("co_pickup");
+  t_co_pickup* pickup = 0;
+  if (ent_id == -1)
+  {
+    ent_id = component_system_create_entity(-1);
+    pickup = cast_ptr(t_co_pickup) component_system_create_component_ptr(ent_id, "co_pickup");
+  }
+  else
+  {
+    pickup = cast_ptr(t_co_pickup) component_system_entity_get_component(ent_id, "co_pickup");
+  }
+  pickup->fuel = GetRandomValue(10, 50);
+
+  component_system_set_local_transform(ent_id, MatrixTranslate(position.x, position.y, position.z));
+  component_system_update_global_transform(ent_id);
 }
 
 

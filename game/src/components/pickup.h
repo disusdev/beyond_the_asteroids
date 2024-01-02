@@ -31,6 +31,7 @@ pickup_collide(t_co_collision* pickup_coll, t_co_collision* other_coll)
     ship_hp->health += pickup->hp;
     component_system_push(pickup_coll->entity_id);
     play_once(SFX_SHIP_PICK_UP);
+    stop_music(MUSIC_SHIP_LOW_FUEL);
   }
 }
 
@@ -41,6 +42,7 @@ pickup_create(i32 entity_id, i32 cfg_id)
   pickup.entity_id = entity_id;
   pickup.fuel = 0;
   pickup.hp = 0;
+  pickup.angle = GetRandomValue(0, 360) * DEG2RAD;
 
   t_co_collision* coll = cast_ptr(t_co_collision) component_system_create_component_ptr(entity_id, "co_collision");
   coll->layer = 5;
@@ -67,6 +69,7 @@ pickup_system_update(f32 dt)
   t_co_pickup* pickups = component_system_get("co_pickup", &count);
   for (u64 i = 0; i < count; i++)
   {
+    if (!component_system_entity_is_enabled(pickups[i].entity_id)) continue;
     pickups[i].angle += pickups[i].angle < 0 ? -dt : dt;
     Quaternion tilt_rot = QuaternionFromEuler(pickups[i].angle,0,-pickups[i].angle * 0.5f);
     Matrix model_transform = component_system_get_local_transform(pickups[i].entity_id);
@@ -77,8 +80,15 @@ pickup_system_update(f32 dt)
     model_transform.m13 = model_pos.y;
     model_transform.m14 = model_pos.z;
     component_system_set_local_transform(pickups[i].entity_id, model_transform);
+    
+    Camera camera = camera_system_get_camera();
+    camera.position.y = 1;
+    f32 out_dst = Vector3Distance(camera.position, model_pos);
+    if (out_dst > 200)
+    {
+      component_system_push(pickups[i].entity_id);
+    }
   }
-  
 }
 
 
