@@ -112,6 +112,33 @@ check_for_target(t_co_ship* ship)
 }
 
 
+f32 tilter = 0;
+void
+ship_system_tilt_update(f32 dt)
+{
+  u64 ships_count = 0;
+  t_co_ship* ships = cast_ptr(t_co_ship) component_system_get("co_ship", &ships_count);
+
+  if (ships_count == 0) return;
+
+  t_co_ship* ship = &ships[0];
+
+  {
+    tilter += dt;
+    f32 angle_diff = sinf(tilter)*(10*DEG2RAD);
+    Quaternion tilt_rot = QuaternionFromEuler(0,0,angle_diff);
+    Matrix model_transform = component_system_get_local_transform(ship->model_id);
+    Quaternion model_curr_rot = QuaternionFromMatrix(model_transform);
+    Vector3 model_pos = extract_position(&model_transform);
+    model_transform = QuaternionToMatrix(QuaternionSlerp(model_curr_rot, tilt_rot, dt));
+    model_transform.m12 = model_pos.x;
+    model_transform.m13 = model_pos.y;
+    model_transform.m14 = model_pos.z;
+    component_system_set_local_transform(ship->model_id, model_transform);
+  }
+}
+
+
 void
 ship_system_update(f32 dt, void (*end)())
 {
@@ -142,7 +169,7 @@ ship_system_update(f32 dt, void (*end)())
     }
   }
   else
-  if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT))
+  if (IsMouseButtonDown(MOUSE_BUTTON_LEFT))//IsMouseButtonPressed(MOUSE_BUTTON_LEFT))
   {
     check_for_target(ship);
 

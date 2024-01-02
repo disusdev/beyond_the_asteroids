@@ -745,6 +745,7 @@ game_update(f32 dt)
   case GAME_STATE_MENU:
   {
     update_wheal(current_wheal);
+    ship_system_tilt_update(dt);
   } break;
   case GAME_STATE_GAME:
   {
@@ -829,7 +830,26 @@ game_render(f32 dt)
     Matrix transform = component_system_get_global_transform(ships[i].entity_id);
     Vector3 ship_position = extract_position(&transform);
 
-    DrawSphere((Vector3){ships[i].move_pos.x, 0, ships[i].move_pos.z}, 0.3f, MAGENTA);
+    Vector3 center = (Vector3){ships[i].move_pos.x, 0, ships[i].move_pos.z};
+
+    f32 radius = 0.5;
+    f32 h_radius = 0.75 * 0.5;
+    Vector3 helpers[] = 
+    {
+      (Vector3) {-h_radius,0,-h_radius},
+      (Vector3) {h_radius,0,h_radius},
+      (Vector3) {-h_radius,0,h_radius},
+      (Vector3) {h_radius,0,-h_radius}
+    };
+
+    BoundingBox bbox = {0};
+    bbox.min = Vector3Add(center, helpers[0]);
+    bbox.max = Vector3Add(center, helpers[1]);
+    DrawLine3D(bbox.min, bbox.max, RED);
+    bbox.min = Vector3Add(center, helpers[2]);
+    bbox.max = Vector3Add(center, helpers[3]);
+    DrawLine3D(bbox.min, bbox.max, RED);
+    DrawCircle3D(center, radius, (Vector3){1,0,0}, 90, RED);
 
     if (ships[i].target != -1)
     {
@@ -973,17 +993,30 @@ void DrawTextureQuad(Texture2D texture, Vector2 tiling, Vector2 offset, Rectangl
   DrawTexturePro(texture, source, quad, origin, 0.0f, tint);
 }
 
-
+static f32 alternative_offset = 0;
+static f32 alternative_offset_speed = 0.1;
 void
 game_pre_render(f32 dt)
 {
   Matrix transform = component_system_get_global_transform(camera_id);
   Vector3 pos = extract_position(&transform);
 
-  Vector2 offset = (Vector2) {-pos.x/GetScreenWidth()*20, -pos.z/GetScreenHeight()*20};
   Rectangle dest = { 0, 0, GetScreenWidth(), GetScreenHeight() };
 
-  DrawTextureQuad(background, (Vector2) {1,1}, offset, dest, WHITE);
+  switch (state)
+  {
+  case GAME_STATE_MENU:
+  {
+    alternative_offset += dt;
+    Vector2 offset = (Vector2) { alternative_offset * alternative_offset_speed, 0};
+    DrawTextureQuad(background, (Vector2) {1,1}, offset, dest, WHITE);
+  } break;
+  case GAME_STATE_GAME:
+  {
+    Vector2 offset = (Vector2) {-pos.x/GetScreenWidth()*20, -pos.z/GetScreenHeight()*20};
+    DrawTextureQuad(background, (Vector2) {1,1}, offset, dest, WHITE);
+  } break;
+  }
 }
 
 
