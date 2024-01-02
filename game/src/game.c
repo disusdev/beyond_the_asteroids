@@ -622,6 +622,44 @@ draw_wheal(t_buttons_wheal* wheal)
   f32 start_x = origin.x;
   f32 start_y = origin.y - 64 - (60 + 32) * wheal->current;
 
+  Vector2 mouse_pos = GetMousePosition();
+  i32 mouse_hover = wheal->current;
+
+  for (u32 i = 0; i < wheal->count; i++)
+  {
+    f32 font_size = 64 * (wheal->current == i ? 2 : 1);
+    f32 text_size = MeasureText(wheal->options_labels[i], font_size);
+    f32 posX = start_x - text_size - (wheal->current == i ? 40 : 0);
+    f32 posY = start_y;
+    f32 min_x = posX;
+    f32 max_x = posX + text_size;
+    f32 min_y = posY;
+    f32 max_y = posY + font_size;
+    if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT))
+    {
+      if (mouse_pos.x > min_x &&
+          mouse_pos.x < max_x &&
+          mouse_pos.y > min_y &&
+          mouse_pos.y < max_y)
+      {
+        wheal->current = i;
+        wheal->options_callbacks[wheal->current]();
+      }
+    }
+    else
+    {
+      if (mouse_pos.x > min_x &&
+          mouse_pos.x < max_x &&
+          mouse_pos.y > min_y &&
+          mouse_pos.y < max_y)
+      {
+        mouse_hover = i;
+      }
+    }
+    start_y += font_size / 2 + 60;
+  }
+
+  start_y = origin.y - 64 - (60 + 32) * wheal->current;
   for (u32 i = 0; i < wheal->count; i++)
   {
     f32 font_size = 64 * (wheal->current == i ? 2 : 1);
@@ -631,11 +669,14 @@ draw_wheal(t_buttons_wheal* wheal)
     {
       color = GREEN;
     }
-    DrawText(wheal->options_labels[i], start_x - text_size - (wheal->current == i ? 40 : 0), start_y, font_size, color);
-    if (wheal->current == i)
+    f32 posX = start_x - text_size - (wheal->current == i ? 40 : 0);
+    f32 posY = start_y;
+    DrawText(wheal->options_labels[i], posX, posY, font_size, color);
+    if (mouse_hover == i)
     {
-      DrawText(">", start_x - text_size - 128, start_y, 128, GREEN);
+      DrawText(">", start_x - text_size - font_size, start_y, font_size, GREEN);
     }
+
     start_y += font_size / 2 + 60;
   }
 }
