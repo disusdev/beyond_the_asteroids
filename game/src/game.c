@@ -101,6 +101,7 @@ stop_music(e_music music)
 #include "components/asteroid.h"
 #include "components/gun.h"
 #include "components/projectile.h"
+#include "components/pickup.h"
 
 #include <containers/ctbl.h>
 
@@ -235,6 +236,18 @@ void end_move()
 }
 
 
+static void
+create_pickup(Vector3 position)
+{
+  // if (GetRandomValue(0, 5) != 3) return;
+  i32 pickup_id = component_system_create_entity(-1);
+  component_system_set_local_transform(pickup_id, MatrixTranslate(position.x, position.y, position.z));
+  component_system_update_global_transform(pickup_id);
+  t_co_pickup* pickup = cast_ptr(t_co_pickup) component_system_create_component_ptr(pickup_id, "co_pickup");
+  pickup->fuel = 50;
+}
+
+
 void
 add_animation(int entity_id, Vector3 pos, i32 layer)
 {
@@ -279,6 +292,7 @@ add_animation(int entity_id, Vector3 pos, i32 layer)
   if (layer == 0)
   {
     play_once(SFX_COLLISION);
+    create_pickup(pos);
   }
   else
   if (layer == 1)
@@ -697,6 +711,7 @@ game_init()
   health_system_init();
   gun_system_init();
   projectile_system_init();
+  pickup_system_init();
 
   load_textures();
   animations = cvec_create(sizeof(t_sprite_anim), 32, false);
@@ -707,6 +722,7 @@ game_init()
   renderer_system_add_cfg((t_co_renderer_cfg){ 1, "data/models/characters/armory/crossbow_2handed.gltf", false, -1 });
 	renderer_system_add_cfg((t_co_renderer_cfg){ 2, "data/models/asteroids/asteroid_0.glb", false, -1 });
   renderer_system_add_cfg((t_co_renderer_cfg){ 3, "data/models/ship/bob.gltf", false, -1 });
+  renderer_system_add_cfg((t_co_renderer_cfg){ 4, "data/models/can/can.glb", false, -1 });
 
   camera_system_add_cfg((t_co_camera_cfg){ 0, 85.0f, CAMERA_PERSPECTIVE, 2});
   camera_system_add_cfg((t_co_camera_cfg){ 1, 45.0f, CAMERA_PERSPECTIVE, 1});
@@ -813,6 +829,7 @@ game_update(f32 dt)
       asteroid_system_update(dt, &respawn_handle);
       gun_system_update(dt);
       projectile_system_update(dt, &damage_entity);
+      pickup_system_update(dt);
     }
   } break;
   }
@@ -964,6 +981,16 @@ game_render(f32 dt)
   //   Vector3 right = (Vector3) {transform.m0, transform.m1, transform.m2};
   //   right = Vector3Scale(right, colliders[i].offset.x);
   //   DrawSphereWires(Vector3Add(Vector3Add(pos, forward), right), colliders[i].radius, 16, 16, GREEN);
+	// }
+
+
+  // u64 pickup_count = 0;
+  // t_co_pickup* pickups = cast_ptr(t_co_pickup) component_system_get("co_pickup", &pickup_count);
+	// for (u64 i = 0; i < pickup_count; i++)
+	// {
+  //   Matrix transform = component_system_get_global_transform(pickups[i].entity_id);
+  //   Vector3 pos = extract_position(&transform);
+  //   DrawSphereWires(pos, 1, 16, 16, GREEN);
 	// }
 
 

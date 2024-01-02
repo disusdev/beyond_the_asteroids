@@ -93,7 +93,7 @@ check_for_target(t_co_ship* ship)
 
   for (u64 i = 0; i < count; i++)
   {
-    if (colls[i].layer == 1) continue;
+    if (colls[i].layer != 0) continue;
     Matrix m = component_system_get_global_transform(colls[i].entity_id);
     Vector3 forward = (Vector3) {m.m8, m.m9, m.m10};
     forward = Vector3Scale(forward, colls[i].offset.z);
