@@ -618,7 +618,7 @@ update_wheal(t_buttons_wheal* wheal)
 void
 draw_wheal(t_buttons_wheal* wheal)
 {
-  Vector2 origin = (Vector2){ GetScreenWidth() - 20, GetScreenHeight() / 2 };
+  Vector2 origin = (Vector2){ GetScreenWidth() - 60, GetScreenHeight() / 2 + 16 };
   f32 start_x = origin.x;
   f32 start_y = origin.y - 64 - (60 + 32) * wheal->current;
 
@@ -656,7 +656,7 @@ draw_wheal(t_buttons_wheal* wheal)
         mouse_hover = i;
       }
     }
-    start_y += font_size / 2 + 60;
+    start_y += font_size + 60;
   }
 
   start_y = origin.y - 64 - (60 + 32) * wheal->current;
@@ -677,7 +677,7 @@ draw_wheal(t_buttons_wheal* wheal)
       DrawText(">", start_x - text_size - font_size, start_y, font_size, GREEN);
     }
 
-    start_y += font_size / 2 + 60;
+    start_y += font_size + 60;
   }
 }
 
