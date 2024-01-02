@@ -5,7 +5,7 @@
 #include <systems/component_system.h>
 #include "asteroid.h"
 
-typedef struct
+typedef struct co_ship
 {
   int entity_id;
   int camera_id;
@@ -31,9 +31,20 @@ typedef struct
   b32 move_to_target;
 
   t_co_health* health;
+  f32 fuel;
+
+  void (*on_death)(struct co_ship*);
 
   cvec(Vector3) points;
 } t_co_ship;
+
+
+void
+on_death(t_co_ship* ship)
+{
+  stop_music(MUSIC_SHIP_LOW_FUEL);
+  ship->target = -1;
+}
 
 
 int
@@ -51,6 +62,8 @@ co_ship_create_from_cfg(int entity_id, int cfg_id)
   ship.reach_destination = true;
   ship.points = cvec_create(sizeof(Vector3), 128, false);
   ship.target = -1;
+  ship.fuel = 100.0f;
+  ship.on_death = &on_death;
 
   int model_id = component_system_create_entity(entity_id);
   component_system_create_component_by_cfg(model_id, "co_renderer", 3);
@@ -63,7 +76,7 @@ co_ship_create_from_cfg(int entity_id, int cfg_id)
 void
 ship_system_init()
 {
-  component_system_add_component("co_ship", sizeof(t_co_ship), 1, 0, &co_ship_create_from_cfg);
+  component_system_add_component("co_ship", sizeof(t_co_ship), 4, 0, &co_ship_create_from_cfg);
 }
 
 
@@ -110,9 +123,25 @@ ship_system_update(f32 dt, void (*end)())
 
   t_co_ship* ship = &ships[0];
 
+  b32 out_of_fuel = false;
+  if (ship->fuel < EPSILON)
+  {
+    out_of_fuel = true;
+  }
+
   t_entity* entities = component_system_get_entities(0);
   if (!entities[ship->entity_id].enabled) return;
 
+  if (out_of_fuel)
+  {
+    Matrix transform = component_system_get_local_transform(ship->entity_id);
+    ship->move_pos = extract_position(&transform);
+    if (cvec_header(ship->points)->size > 0)
+    {
+      cvec_clear(ship->points);
+    }
+  }
+  else
   if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT))
   {
     check_for_target(ship);
@@ -234,9 +263,15 @@ ship_system_update(f32 dt, void (*end)())
 
     f32 dst = Vector3Distance(pos, ship->move_pos);
     f32 target_speed = asteroids[ship->target].speed;
-    if (dst < 8.0f && ship->speed > target_speed)
+
+    if (dst < 10.0f && ship->speed > target_speed)
     {
       real_speed = target_speed;
+    }
+    else
+    if (ship->angle < (5 * DEG2RAD) && ship->angle > (-5 * DEG2RAD))
+    {
+      real_speed = real_speed * 1.5f;
     }
   }
 
@@ -261,7 +296,51 @@ ship_system_update(f32 dt, void (*end)())
   //   real_speed = Lerp(0.1, ship->speed, ship->slow_time);
   // }
 
+  b32 prev_move = ship->in_move;
+
   ship->in_move = Vector3Distance(pos, ship->move_pos) > 1.2f;
+
+  if (ship->in_move && !prev_move)
+  {
+    play_once(SFX_SHIP_LUNCH);
+    play_music(MUSIC_SHIP_MOVE);
+  }
+
+  if (!ship->in_move && prev_move)
+  {
+    stop_music(MUSIC_SHIP_MOVE);
+  }
+
+  if (out_of_fuel)
+  {
+    {
+      ship->angle += ship->angle < 0 ? -dt : dt;
+      Quaternion tilt_rot = QuaternionFromEuler(0,ship->angle,0);
+      Matrix model_transform = component_system_get_local_transform(ship->model_id);
+      Quaternion model_curr_rot = QuaternionFromMatrix(model_transform);
+      Vector3 model_pos = extract_position(&model_transform);
+      model_transform = QuaternionToMatrix(QuaternionSlerp(model_curr_rot, tilt_rot, dt));
+      model_transform.m12 = model_pos.x;
+      model_transform.m13 = model_pos.y;
+      model_transform.m14 = model_pos.z;
+      
+      component_system_set_local_transform(ship->model_id, model_transform);
+
+      pos.x += ship->velocity.x * dt;
+      pos.y += ship->velocity.y * dt;
+      pos.z += ship->velocity.z * dt;
+
+      ship->velocity = Vector3Add(ship->velocity, Vector3Scale(Vector3Normalize(ship->velocity), dt));
+
+      transform.m12 = pos.x;
+      transform.m13 = pos.y;
+      transform.m14 = pos.z;
+
+      component_system_set_local_transform(ship->entity_id, transform);
+    }
+
+    return;
+  }
 
   if (ship->in_move)
   {
@@ -305,7 +384,20 @@ ship_system_update(f32 dt, void (*end)())
     transform.m13 = pos.y;
     transform.m14 = pos.z;
 
-    component_system_set_local_transform(ship->entity_id, transform);    
+    component_system_set_local_transform(ship->entity_id, transform);
+
+    ship->fuel -= real_speed * dt;
+    if (ship->fuel < 0)
+    {
+      ship->fuel = 0;
+      if (!ship->reach_destination)
+      {
+        // call end move callback
+        end();
+        play_music(MUSIC_SHIP_LOW_FUEL);
+      }
+      ship->reach_destination = true;
+    }
   }
   else
   {

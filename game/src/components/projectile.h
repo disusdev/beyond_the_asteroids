@@ -8,7 +8,8 @@
 typedef struct
 {
   i32 entity_id;
-  // i32 target_id;
+  i32 target_id;
+
   t_co_ship* ship;
 
   Vector3 dir;
@@ -26,6 +27,7 @@ co_projectile_create(int entity_id, int cfg_id)
   proj.entity_id = entity_id;
   proj.speed = 30.0f;
   proj.life_timer = 3.0f;
+  proj.target_id = -1;
 
   return component_system_insert(entity_id, "co_projectile", &proj);
 }
@@ -52,7 +54,7 @@ projectile_system_update(f32 dt, b32 (*damage)(i32, i32))
 
     Matrix transform = component_system_get_global_transform(projs[i].entity_id);
 
-    if (projs[i].ship->target == -1)
+    if (projs[i].target_id == -1)
     {
       projs[i].life_timer -= dt;
       if (projs[i].life_timer <= 0.0f)
@@ -66,7 +68,7 @@ projectile_system_update(f32 dt, b32 (*damage)(i32, i32))
       // follow target
       Vector3 pos = extract_position(&transform);
 
-      Matrix target_transform = component_system_get_global_transform(projs[i].ship->target);
+      Matrix target_transform = component_system_get_global_transform(projs[i].target_id);
       Vector3 target_pos = extract_position(&target_transform);
 
       projs[i].dir = Vector3Subtract(target_pos, pos);

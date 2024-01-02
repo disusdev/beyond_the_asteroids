@@ -48,7 +48,7 @@ co_asteroid_create_from_cfg(int entity_id, int cfg_id)
 void
 asteroid_system_init()
 {
-  component_system_add_component("co_asteroid", sizeof(t_co_asteroid), 1, 0, &co_asteroid_create_from_cfg);
+  component_system_add_component("co_asteroid", sizeof(t_co_asteroid), 128, 0, &co_asteroid_create_from_cfg);
 }
 
 

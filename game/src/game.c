@@ -15,6 +15,82 @@
 static int WINDOW_WIDTH = 1920;
 static int WINDOW_HEIGHT = 1080;
 
+typedef enum
+{
+  GAME_STATE_MENU = 0,
+  GAME_STATE_GAME,
+  GAME_STATE_PAUSE
+} e_game_state;
+
+e_game_state state = GAME_STATE_MENU;
+
+typedef enum
+{
+  MUSIC_GAME,
+  MUSIC_MENU,
+  MUSIC_SHIP_MOVE,
+  MUSIC_SHIP_LOW_FUEL,
+  MUSIC_COUNT
+} e_music;
+
+
+typedef enum
+{
+  SFX_COLLISION,
+  SFX_SHIP_FIRE,
+  SFX_SHIP_LUNCH,
+  SFX_SHIP_LOW_HEALTH,
+  SFX_SHIP_PICK_UP,
+  SFX_ASTEROID_HIT,
+  SFX_COUNT
+} e_sfx;
+
+const char* music_path[] =
+{
+  "data/audio/cosmohunter_game_loop.wav",
+  "data/audio/cosmohunter_menu_loop.wav",
+  "data/audio/space_ship_move_loop.wav",
+  "data/audio/spaceship_low_fuel.wav"
+};
+
+const char* sfx_path[] =
+{
+  "data/audio/space_collision.wav",
+  "data/audio/space_ship_fire.wav",
+  "data/audio/space_ship_lunch.wav",
+  "data/audio/spaceship_low_health.wav",
+  "data/audio/spaceship_pick_up.wav",
+  "data/audio/asteroid_hitted.wav"
+};
+
+Music music_tbl[MUSIC_COUNT] = {0};
+Sound sfx_tbl[SFX_COUNT] = {0};
+
+
+void
+play_once(e_sfx sfx)
+{
+  if (state == GAME_STATE_MENU) return;
+  // RayPlaySound(sfx_tbl[sfx]);
+  PlaySound(sfx_tbl[sfx]);
+}
+
+
+void
+play_music(e_music music)
+{
+  //if (!IsMusicStreamPlaying(music_tbl[music]))
+  PlayMusicStream(music_tbl[music]);
+}
+
+
+void
+stop_music(e_music music)
+{
+  //if (IsMusicStreamPlaying(music_tbl[music]))
+  StopMusicStream(music_tbl[music]);
+}
+
 
 #include "components/text_3d.h"
 #include "components/movement.h"
@@ -35,16 +111,6 @@ typedef struct
   i32 id;
   i32 frame;
 } t_sprite_anim;
-
-
-typedef enum
-{
-  GAME_STATE_MENU = 0,
-  GAME_STATE_GAME,
-  GAME_STATE_PAUSE
-} e_game_state;
-
-e_game_state state = GAME_STATE_MENU;
 
 
 static Mesh grid_mesh;
@@ -78,61 +144,10 @@ load_textures()
 }
 
 
-typedef enum
-{
-  MUSIC_GAME,
-  MUSIC_SHIP_MOVE
-} e_music;
-
-
-typedef enum
-{
-  SFX_COLLISION,
-  SFX_SHIP_FIRE,
-  SFX_SHIP_LUNCH
-} e_sfx;
-
-
-const char* music_game_path = "data/audio/cosmohunter_loop.wav";
-const char* music_ship_move_path = "data/audio/space_ship_move_loop.wav";
-
-const char* sfx_collision_path = "data/audio/space_collision.wav";
-const char* sfx_ship_fire_path = "data/audio/space_ship_fire.wav";
-const char* sfx_ship_lunch_path = "data/audio/space_ship_lunch.wav";
-
-
-Music music_tbl[2] = {0};
-Sound sfx_tbl[3] = {0};
-
-
-void
-play_once(e_sfx sfx)
-{
-  // RayPlaySound(sfx_tbl[sfx]);
-  PlaySound(sfx_tbl[sfx]);
-}
-
-
-void
-play_music(e_music music)
-{
-  //if (!IsMusicStreamPlaying(music_tbl[music]))
-  PlayMusicStream(music_tbl[music]);
-}
-
-
-void
-stop_music(e_music music)
-{
-  //if (IsMusicStreamPlaying(music_tbl[music]))
-  StopMusicStream(music_tbl[music]);
-}
-
-
 void
 update_music()
 {
-  for (u64 i = 0; i < 2; i++)
+  for (u64 i = 0; i < MUSIC_COUNT; i++)
   {
     UpdateMusicStream(music_tbl[i]);
   }
@@ -172,19 +187,23 @@ load_audio()
 
   AttachAudioMixedProcessor(ProcessAudio);
 
-  music_tbl[MUSIC_GAME] = LoadMusicStream(music_game_path);
-  music_tbl[MUSIC_GAME].looping = true;
-  SetMusicVolume(music_tbl[MUSIC_GAME], 0.75f);
-  music_tbl[MUSIC_SHIP_MOVE] = LoadMusicStream(music_ship_move_path);
-  music_tbl[MUSIC_SHIP_MOVE].looping = true;
-  SetMusicVolume(music_tbl[MUSIC_SHIP_MOVE], 1.5f);
+  for (u64 i = 0; i < MUSIC_COUNT; i++)
+  {
+    music_tbl[i] = LoadMusicStream(music_path[i]);
+  }
 
-  sfx_tbl[SFX_COLLISION] = LoadSound(sfx_collision_path);
-  sfx_tbl[SFX_SHIP_FIRE] = LoadSound(sfx_ship_fire_path);
-  sfx_tbl[SFX_SHIP_LUNCH] = LoadSound(sfx_ship_lunch_path);
+  music_tbl[MUSIC_GAME].looping = true;
+  SetMusicVolume(music_tbl[MUSIC_GAME], 0.55f);
+  music_tbl[MUSIC_SHIP_MOVE].looping = true;
+  SetMusicVolume(music_tbl[MUSIC_SHIP_MOVE], 3.0f);
+
+  for (u64 i = 0; i < SFX_COUNT; i++)
+  {
+    sfx_tbl[i] = LoadSound(sfx_path[i]);
+  }
   SetSoundVolume(sfx_tbl[SFX_SHIP_LUNCH], 0.5f);
 
-  play_music(MUSIC_GAME);
+  play_music(MUSIC_MENU);
 }
 
 
@@ -217,23 +236,32 @@ void end_move()
 
 
 void
-add_animation(int entity_id, Vector3 pos)
+add_animation(int entity_id, Vector3 pos, i32 layer)
 {
   t_entity* entities = component_system_get_entities(0);
   t_sprite_anim anim = {0};
   anim.pos = pos;
   anim.frame = 0;
 
-  if (ctbl_exist(entities[entity_id].components, "co_asteroid"))
+  if (layer == 0)
   {
     anim.id = 0;
+    u64 count = 0;
+    t_co_projectile* projs = component_system_get("co_projectile", &count);
+    for (u64 i = 0; i < count; i++)
+    {
+      if (projs[i].target_id == entity_id)
+      {
+        projs[i].target_id = -1;
+      }
+    }
     if (ship->target == entity_id)
     {
       ship->target = -1;
     }
   }
   else
-  if (ctbl_exist(entities[entity_id].components, "co_ship"))
+  if (layer == 1)
   {
     anim.id = 3;
   }
@@ -246,9 +274,19 @@ add_animation(int entity_id, Vector3 pos)
     return;
   }
 
-  play_once(SFX_COLLISION);
-
   animations = cvec_push(animations, &anim);
+
+  if (layer == 0)
+  {
+    play_once(SFX_COLLISION);
+  }
+  else
+  if (layer == 1)
+  {
+    play_once(SFX_SHIP_LOW_HEALTH);
+    SetMusicVolume(music_tbl[MUSIC_GAME], 0.0f);
+    ship->on_death(&ship);
+  }
 }
 
 
@@ -336,22 +374,26 @@ respawn_handle(int entity_id)
 
 
 void
-collision_handle(t_co_collision* c1, t_co_collision* c2)//int e1, int e2)
+collision_handle(t_co_collision* c1, t_co_collision* c2)
 {
   if (health_system_on_health_change(c1->entity_id, -100))
   {
     Matrix transform = component_system_get_global_transform(c1->entity_id);
-    add_animation(c1->entity_id, extract_position(&transform));
-
-    create_asteroid();
+    add_animation(c1->entity_id, extract_position(&transform), c1->layer);
+    if (c1->layer != 1)
+    {
+      create_asteroid();
+    }
   }
 
   if (health_system_on_health_change(c2->entity_id, -100) && c1->entity_id != c2->entity_id)
   {
     Matrix transform = component_system_get_global_transform(c2->entity_id);
-    add_animation(c2->entity_id, extract_position(&transform));
-
-    create_asteroid();
+    add_animation(c2->entity_id, extract_position(&transform), c2->layer);
+    if (c2->layer != 1)
+    {
+      create_asteroid();
+    }
   }
 }
 
@@ -362,11 +404,12 @@ damage_entity(i32 entity_id, i32 dmg)
   if (health_system_on_health_change(entity_id, -dmg))
   {
     Matrix transform = component_system_get_global_transform(entity_id);
-    add_animation(entity_id, extract_position(&transform));
+    add_animation(entity_id, extract_position(&transform), 0);
     create_asteroid();
     score++;
     return true;
   }
+  play_once(SFX_ASTEROID_HIT);
   return false;
 }
 
@@ -429,7 +472,7 @@ lunch_projectile(Vector3 from, Vector3 to)
     // coll->layer = 2;
     // coll->radius = 0.25;
     // component_system_create_component(proj_id, "co_health");
-    i32 proj_comp_id = component_system_create_component(proj_id, "co_projectile");
+    component_system_create_component(proj_id, "co_projectile");
   }
 
   component_system_set_local_transform(proj_id, MatrixTranslate(from.x, 1, from.z));
@@ -437,6 +480,7 @@ lunch_projectile(Vector3 from, Vector3 to)
   
   t_co_projectile* projectile = component_system_entity_get_component(proj_id, "co_projectile");
   projectile->ship = ship;
+  projectile->target_id = ship->target;
   projectile->life_timer = 3.0f;
 
   // lunch projectile
@@ -476,6 +520,8 @@ menu_play()
     mover->camera = &cameras[camera_id];
   }
 
+  stop_music(MUSIC_MENU);
+  play_music(MUSIC_GAME);
   state = GAME_STATE_GAME;
 }
 
@@ -710,8 +756,10 @@ game_update(f32 dt)
         component_system_set_local_transform(id, MatrixTranslate(0, 1, 0));
         component_system_update_global_transform(id);
         ship->health->health = 300;
+        ship->fuel = 100.0f;
         ship->health->is_dead = false;
         ship->move_pos = (Vector3){0, 1, 0};
+        SetMusicVolume(music_tbl[MUSIC_GAME], 0.75f);
       }
     }
     else
@@ -730,6 +778,36 @@ game_update(f32 dt)
   update_music();
 }
 
+f32 rotcircle = 0;
+
+b32
+cursor_on_target()
+{
+  Camera cam = camera_system_get_camera();
+  Vector2 mouse_pos = GetMousePosition();
+  Ray ray = GetMouseRay(mouse_pos, cam);
+
+  u64 count = 0;
+  t_co_collision* colls = component_system_get("co_collision", &count);
+
+  for (u64 i = 0; i < count; i++)
+  {
+    if (colls[i].layer == 1) continue;
+    Matrix m = component_system_get_global_transform(colls[i].entity_id);
+    Vector3 forward = (Vector3) {m.m8, m.m9, m.m10};
+    forward = Vector3Scale(forward, colls[i].offset.z);
+    Vector3 right = (Vector3) {m.m0, m.m1, m.m2};
+    right = Vector3Scale(right, colls[i].offset.x);
+    Vector3 center = Vector3Add(Vector3Add(extract_position(&m), forward), right);
+    RayCollision coll = GetRayCollisionSphere(ray, center, colls[i].radius);
+    if (coll.hit)
+    {
+      return true;
+    }
+  }
+
+  return false;
+}
 
 void
 game_render(f32 dt)
@@ -764,6 +842,13 @@ game_render(f32 dt)
       Matrix target_transform = component_system_get_global_transform(ships[i].target);
       Vector3 target_position = extract_position(&target_transform);
       DrawLine3D(ship_position, target_position, RED);
+
+    }
+
+    if (cursor_on_target())
+    {
+      rotcircle = 90;
+      DrawCircle3D(ship_position, 20, (Vector3){1,0,0}, rotcircle, RED);
     }
   }
 
@@ -842,6 +927,9 @@ game_draw_ui()
 
     sprintf(hp_points_str, "%09d", score);
     DrawText(hp_points_str, GetScreenWidth() / 2 - MeasureText(hp_points_str, 40) / 2, 20, 40, RAYWHITE);
+
+    sprintf(hp_points_str, "FUEL: %.0f", ship->fuel);
+    DrawText(hp_points_str, GetScreenWidth() - MeasureText(hp_points_str, 40) - 20, 20, 40, RAYWHITE);
 
     int fps = GetFPS();
     sprintf(hp_points_str, "%d", fps);

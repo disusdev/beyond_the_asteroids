@@ -16,9 +16,11 @@ typedef struct
   i32 ammo_count;
   f32 restore_ammo_time;
 
+
   f32 timer;
 
   i32 state;
+  f32 range;
 
   void (*fire_callback)(Vector3 from, Vector3 to);
 } t_co_gun;
@@ -40,6 +42,8 @@ co_gun_create(i32 entity_id, i32 cfg_id)
 
   gun.state = 0;
 
+  gun.range = 20.0f;
+
   return component_system_insert(entity_id, "co_gun", &gun);
 }
 
@@ -55,6 +59,27 @@ void
 co_gun_update(t_co_gun* gun, f32 dt)
 {
   if (!component_system_entity_is_enabled(gun->entity_id)) return;
+
+  // check distance to target
+  b32 target_in_range = false;
+  if (gun->ship->target != -1)
+  {
+    Matrix target_transform = component_system_get_global_transform(gun->ship->target);
+    Vector3 target_pos = extract_position(&target_transform);
+    Matrix ship_transform = component_system_get_global_transform(gun->ship->entity_id);
+    Vector3 ship_pos = extract_position(&ship_transform);
+    f32 dst = Vector3Distance(target_pos, ship_pos);
+    if (dst < gun->range)
+    {
+      //gun->ship->target = -1;
+      target_in_range = true;
+    }
+
+    if (gun->ship->fuel < EPSILON)
+    {
+      gun->ship->target = -1;
+    }
+  }
 
   gun->timer -= dt;
   switch (gun->state)
@@ -83,6 +108,12 @@ co_gun_update(t_co_gun* gun, f32 dt)
       {
         gun->timer = gun->restore_ammo_time;
         gun->state = 2;
+        return;
+      }
+
+      if (!target_in_range)
+      {
+        gun->state = 0;
         return;
       }
 

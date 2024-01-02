@@ -141,13 +141,12 @@ engine_create(t_app* app)
   SetConfigFlags(FLAG_WINDOW_UNDECORATED);
   InitWindow(app->window_size_x, app->window_size_y, app->name);
 
-  app->window_size_x = GetMonitorWidth(GetCurrentMonitor());
-  app->window_size_y = GetMonitorHeight(GetCurrentMonitor());
+  // app->window_size_x = GetMonitorWidth(GetCurrentMonitor());
+  // app->window_size_y = GetMonitorHeight(GetCurrentMonitor());
+  // SetWindowSize(app->window_size_x, app->window_size_y);
 
-  SetWindowSize(app->window_size_x, app->window_size_y);
-
-  // SetWindowState(FLAG_WINDOW_HIGHDPI | FLAG_MSAA_4X_HINT | FLAG_VSYNC_HINT);
-  SetWindowState(FLAG_VSYNC_HINT | FLAG_FULLSCREEN_MODE | FLAG_WINDOW_HIGHDPI | FLAG_MSAA_4X_HINT);
+  // SetWindowState(FLAG_VSYNC_HINT | FLAG_FULLSCREEN_MODE | FLAG_WINDOW_HIGHDPI | FLAG_MSAA_4X_HINT);
+  SetWindowState(FLAG_VSYNC_HINT | FLAG_WINDOW_HIGHDPI | FLAG_MSAA_4X_HINT);
 
   SetTargetFPS(60);
 }
