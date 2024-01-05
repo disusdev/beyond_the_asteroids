@@ -139,17 +139,15 @@ engine_create(t_app* app)
   
 
   // SetTraceLogLevel(RL_LOG_ERROR);
-  
-  SetConfigFlags(FLAG_WINDOW_UNDECORATED);
   InitWindow(app->window_size_x, app->window_size_y, app->name);
+  
+  //SetConfigFlags(FLAG_WINDOW_UNDECORATED);
 
 #ifdef START_FULL_SCREEN
-  app->window_size_x = GetMonitorWidth(GetCurrentMonitor());
-  app->window_size_y = GetMonitorHeight(GetCurrentMonitor());
-  SetWindowSize(app->window_size_x, app->window_size_y);
-  SetWindowState(FLAG_VSYNC_HINT | FLAG_FULLSCREEN_MODE | FLAG_WINDOW_HIGHDPI | FLAG_MSAA_4X_HINT);
+  SetWindowState(FLAG_VSYNC_HINT | FLAG_WINDOW_RESIZABLE | FLAG_WINDOW_HIGHDPI | FLAG_MSAA_4X_HINT);
+  ToggleFullscreen();
 #else
-  SetWindowState(FLAG_VSYNC_HINT | FLAG_WINDOW_HIGHDPI | FLAG_MSAA_4X_HINT);
+  SetWindowState(FLAG_VSYNC_HINT | FLAG_WINDOW_HIGHDPI | FLAG_WINDOW_RESIZABLE | FLAG_MSAA_4X_HINT);
 #endif
 
   SetTargetFPS(60);
@@ -200,10 +198,30 @@ engine_run()
   //lights[2] = CreateLight(LIGHT_POINT, (Vector3){ -2, 1, 2 }, Vector3Zero(), GREEN, light_shader);
   //lights[3] = CreateLight(LIGHT_POINT, (Vector3){ 2, 1, -2 }, Vector3Zero(), BLUE, light_shader);
   
-  RenderTexture2D target = LoadRenderTextureDepthTex(engine.app->window_size_x, 
-                                                     engine.app->window_size_y);
-  RenderTexture2D gizmo_target = LoadRenderTextureDepthTex(engine.app->window_size_x, 
-                                                     engine.app->window_size_y);
+  RenderTexture2D target, gizmo_target;
+  
+  int display = GetCurrentMonitor();      
+  if (!IsWindowFullscreen())
+  {
+    SetWindowSize(engine.app->window_size_x, engine.app->window_size_y);
+  
+    target = LoadRenderTextureDepthTex(engine.app->window_size_x, 
+                                       engine.app->window_size_y);
+    gizmo_target = LoadRenderTextureDepthTex(engine.app->window_size_x, 
+                                             engine.app->window_size_y);
+  }
+  else
+  {
+    i32 width = GetMonitorWidth(display);
+    i32 height = GetMonitorHeight(display);
+    printf("%d, %d\n", width, height);
+    SetWindowSize(width, height);
+  
+    target = LoadRenderTextureDepthTex(width, 
+                                       height);
+    gizmo_target = LoadRenderTextureDepthTex(width, 
+                                             height);
+  }
 
   engine.app->init();
 
@@ -231,6 +249,51 @@ engine_run()
     // input_update();
     
     if (!engine.is_running) break;
+    
+    
+    if (IsWindowResized() && !IsWindowFullscreen())
+    {
+      engine.app->window_size_x = GetScreenWidth();
+      engine.app->window_size_y = GetScreenHeight();
+      
+      UnloadRenderTextureDepthTex(target);
+      UnloadRenderTextureDepthTex(gizmo_target);
+      
+      target = LoadRenderTextureDepthTex(engine.app->window_size_x, 
+                                         engine.app->window_size_y);
+      gizmo_target = LoadRenderTextureDepthTex(engine.app->window_size_x, 
+                                               engine.app->window_size_y);
+    }
+    
+    if (IsKeyPressed(KEY_ENTER) && (IsKeyDown(KEY_LEFT_ALT) || IsKeyDown(KEY_RIGHT_ALT)))
+    {
+      ToggleFullscreen();
+      int display = GetCurrentMonitor();      
+      if (!IsWindowFullscreen())
+      {
+        SetWindowSize(engine.app->window_size_x, engine.app->window_size_y);
+        UnloadRenderTextureDepthTex(target);
+        UnloadRenderTextureDepthTex(gizmo_target);
+      
+        target = LoadRenderTextureDepthTex(engine.app->window_size_x, 
+                                           engine.app->window_size_y);
+        gizmo_target = LoadRenderTextureDepthTex(engine.app->window_size_x, 
+                                                 engine.app->window_size_y);
+      }
+      else
+      {
+        i32 width = GetMonitorWidth(display);
+        i32 height = GetMonitorHeight(display);
+        SetWindowSize(width, height);
+        UnloadRenderTextureDepthTex(target);
+        UnloadRenderTextureDepthTex(gizmo_target);
+      
+        target = LoadRenderTextureDepthTex(width, 
+                                           height);
+        gizmo_target = LoadRenderTextureDepthTex(width, 
+                                                 height);
+      }
+    }
     
     fresh = GetTime();
     delta = fresh - current;

@@ -649,6 +649,7 @@ create_options_wheal()
 void
 update_wheal(t_buttons_wheal* wheal)
 {
+  if (IsKeyDown(KEY_LEFT_ALT) || IsKeyDown(KEY_RIGHT_ALT)) return;
   if (IsKeyPressed(KEY_ENTER))
   {
     play_once_ui(SFX_UI_SELECT);
