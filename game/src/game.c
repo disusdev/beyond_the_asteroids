@@ -42,6 +42,13 @@ typedef enum
   SFX_SHIP_LOW_HEALTH,
   SFX_SHIP_PICK_UP,
   SFX_ASTEROID_HIT,
+  SFX_SHIP_STOPS,
+  
+  SFX_UI_BACK,
+  SFX_UI_SCROLL,
+  SFX_UI_SELECT,
+  SFX_UI_START,
+
   SFX_COUNT
 } e_sfx;
 
@@ -60,7 +67,13 @@ const char* sfx_path[] =
   "data/audio/space_ship_lunch.wav",
   "data/audio/spaceship_low_health.wav",
   "data/audio/spaceship_pick_up.wav",
-  "data/audio/asteroid_hitted.wav"
+  "data/audio/asteroid_hitted.wav",
+  "data/audio/space_ship_stops.wav",
+  
+  "data/audio/ui_back.wav",
+  "data/audio/ui_scroll.wav",
+  "data/audio/ui_select.wav",
+  "data/audio/ui_start.wav",
 };
 
 Music music_tbl[MUSIC_COUNT] = {0};
@@ -71,6 +84,15 @@ void
 play_once(e_sfx sfx)
 {
   if (state == GAME_STATE_MENU) return;
+  // RayPlaySound(sfx_tbl[sfx]);
+  PlaySound(sfx_tbl[sfx]);
+}
+
+
+void
+play_once_ui(e_sfx sfx)
+{
+  //if (state == GAME_STATE_MENU) return;
   // RayPlaySound(sfx_tbl[sfx]);
   PlaySound(sfx_tbl[sfx]);
 }
@@ -537,6 +559,8 @@ i32 camera_entity_id;
 void
 menu_play()
 {
+  play_once_ui(SFX_UI_START);
+  
   {// @todo should make mover when starting the game
     t_smooth_mover* mover = component_system_create_component_ptr(camera_entity_id, "co_smooth_mover");
     mover->target_id = ship->entity_id;
@@ -582,7 +606,7 @@ options_sfx()
 {
   sfx_mute = !sfx_mute;
   options_wheal.options_labels[0] = sfx_mute ? "Unmute Music" : "Mute Music";
-  for (u64 i = 0; i < 3; i++)
+  for (u64 i = 0; i < SFX_COUNT; i++)
   {
     SetSoundVolume(sfx_tbl[i], !sfx_mute);
   }
@@ -594,7 +618,7 @@ options_music()
 {
   music_mute = !music_mute;
   options_wheal.options_labels[1] = music_mute ? "Unmute Sfx" : "Mute Sfx";
-  for (u64 i = 0; i < 2; i++)
+  for (u64 i = 0; i < MUSIC_COUNT; i++)
   {
     SetMusicVolume(music_tbl[i], !music_mute);
   }
@@ -603,6 +627,7 @@ options_music()
 void
 options_return()
 {
+  play_once_ui(SFX_UI_BACK);
   current_wheal = &menu_wheal;
 }
 
@@ -626,15 +651,18 @@ update_wheal(t_buttons_wheal* wheal)
 {
   if (IsKeyPressed(KEY_ENTER))
   {
+    play_once_ui(SFX_UI_SELECT);
     wheal->options_callbacks[wheal->current]();
   }
   if (IsKeyPressed(KEY_UP))
   {
+    play_once_ui(SFX_UI_SCROLL);
     wheal->current = MAX(0, wheal->current - 1);
   }
   else
   if (IsKeyPressed(KEY_DOWN))
   {
+    play_once_ui(SFX_UI_SCROLL);
     wheal->current = MIN(wheal->count - 1, wheal->current + 1);
   }
 }

@@ -431,6 +431,7 @@ ship_system_update(f32 dt, void (*end)())
   {
     if (!ship->reach_destination)
     {
+      play_once(SFX_SHIP_STOPS);
       // call end move callback
       end();
     }
