@@ -736,6 +736,10 @@ draw_wheal(t_buttons_wheal* wheal)
 }
 
 
+Shader tiling_shader;
+int space_id;
+
+
 void
 game_init()
 {
@@ -763,6 +767,7 @@ game_init()
 	renderer_system_add_cfg((t_co_renderer_cfg){ 2, "data/models/asteroids/asteroid_0.glb", false, -1 });
   renderer_system_add_cfg((t_co_renderer_cfg){ 3, "data/models/ship/bob.gltf", false, -1 });
   renderer_system_add_cfg((t_co_renderer_cfg){ 4, "data/models/can/can.glb", false, -1 });
+  renderer_system_add_cfg((t_co_renderer_cfg){ 5, "data/models/bg/space.glb", false, -1 });
 
   camera_system_add_cfg((t_co_camera_cfg){ 0, 85.0f, CAMERA_PERSPECTIVE, 2});
   camera_system_add_cfg((t_co_camera_cfg){ 1, 45.0f, CAMERA_PERSPECTIVE, 1});
@@ -818,6 +823,23 @@ game_init()
   menu_wheal = create_menu_wheal();
   options_wheal = create_options_wheal();
   current_wheal = &menu_wheal;
+  
+  space_id = component_system_create_entity(-1);
+  component_system_set_local_transform(space_id, MatrixTranslate(0, -3, 0));
+  int space_renderer_id = component_system_create_component_by_cfg(space_id, "co_renderer", 5);
+  t_co_renderer* renderers = component_system_get("co_renderer", 0);
+  Texture2D texture = LoadTexture("data/bg/space.png");
+  co_renderer_set_texture(&renderers[space_renderer_id], texture);
+  
+  tiling_shader = LoadShader(0, TextFormat("data/shaders/glsl%i/tiling.fs", 330));
+  
+  float tiling[2] = { 1.5f, 1.5f };
+  SetShaderValue(tiling_shader, GetShaderLocation(tiling_shader, "tiling"), tiling, SHADER_UNIFORM_VEC2);
+  
+  float offset[2] = { 1.5f, 1.0f };
+  SetShaderValue(tiling_shader, GetShaderLocation(tiling_shader, "offset"), offset, SHADER_UNIFORM_VEC2);
+  
+  co_renderer_set_shader(&renderers[space_renderer_id], tiling_shader);
 }
 
 
@@ -858,6 +880,7 @@ game_update(f32 dt)
         ship->health->is_dead = false;
         ship->move_pos = (Vector3){0, 1, 0};
         SetMusicVolume(music_tbl[MUSIC_GAME], 0.75f);
+        component_system_set_local_transform(camera_entity_id, MatrixTranslate(0, 15, 0));
       }
     }
     else
@@ -1116,9 +1139,7 @@ game_pre_render(f32 dt)
 {
   Matrix transform = component_system_get_global_transform(camera_id);
   Vector3 pos = extract_position(&transform);
-
-  Rectangle dest = { 0, 0, GetScreenWidth(), GetScreenHeight() };
-
+  
   f32 x_mult = 1 / 88.2;
   f32 y_mult = 1 / 49.6;
 
@@ -1126,16 +1147,25 @@ game_pre_render(f32 dt)
   {
   case GAME_STATE_MENU:
   {
+    float tiling[2] = { 3.0f, 3.0f };
+    SetShaderValue(tiling_shader, GetShaderLocation(tiling_shader, "tiling"), tiling, SHADER_UNIFORM_VEC2);
+  
     alternative_offset += dt;
-    Vector2 offset = (Vector2) { alternative_offset * alternative_offset_speed, 0};
-    DrawTextureQuad(background, (Vector2) {1,1}, offset, dest, WHITE);
+    float offset[2] = { 0, alternative_offset * alternative_offset_speed };
+    SetShaderValue(tiling_shader, GetShaderLocation(tiling_shader, "offset"), offset, SHADER_UNIFORM_VEC2);
   } break;
   case GAME_STATE_GAME:
   {
-    Vector2 offset = (Vector2) {-pos.x * x_mult, -pos.z * y_mult};
-    DrawTextureQuad(background, (Vector2) {1,1}, offset, dest, WHITE);
+    float tiling[2] = { 1.5f, 1.5f };
+    SetShaderValue(tiling_shader, GetShaderLocation(tiling_shader, "tiling"), tiling, SHADER_UNIFORM_VEC2);
+  
+    float offset[2] = { pos.x * x_mult, pos.z * y_mult };
+    SetShaderValue(tiling_shader, GetShaderLocation(tiling_shader, "offset"), offset, SHADER_UNIFORM_VEC2);
   } break;
   }
+  
+  Matrix plane_transform = MatrixTranslate(pos.x,-3,pos.z);
+  component_system_set_local_transform(space_id, plane_transform);
 }
 
 

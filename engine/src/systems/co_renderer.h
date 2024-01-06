@@ -50,6 +50,8 @@ typedef struct
   // TODO: it is only used in asset selector scene,
   //       should be moved
   // BoundingBox bbox;
+  
+  Vector2 tiling;
 
 } t_co_renderer;
 
@@ -60,6 +62,10 @@ renderer_system_add_cfg(t_co_renderer_cfg cfg);
 
 t_co_renderer_cfg
 renderer_system_get_cfg(int id);
+
+
+void
+co_renderer_set_texture(t_co_renderer* renderer, Texture2D texture);
 
 
 int

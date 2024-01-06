@@ -104,7 +104,7 @@ co_renderer_draw(t_co_renderer* renderer)
   for (u64 i = 0; i < mesh_count; i++)
   {
     DrawMesh(renderer->meshes[i],
-             renderer->materials[renderer->material_map[i]], //materials[renderer->m.meshMaterial[i]],
+             renderer->materials[renderer->material_map[i]],
              transform);
   }
 }
@@ -204,6 +204,32 @@ co_renderer_create(int entity_id, const char* model_path, bool is_static, Materi
 
   return component_system_insert(entity_id, "co_renderer", &renderer);
 }
+
+
+void
+co_renderer_set_texture(t_co_renderer* renderer, Texture2D texture)
+{
+  u64 mesh_count = cvec_header(renderer->meshes)->size;
+  for (u64 i = 0; i < mesh_count; i++)
+  {
+    SetMaterialTexture(&renderer->materials[renderer->material_map[i]], MATERIAL_MAP_DIFFUSE, texture);
+  }
+}
+
+
+// void
+// co_renderer_set_texcoord(t_co_renderer* renderer, Vector2 offset, Vector2 scale)
+// {
+//   // int textureTilingLoc = GetShaderLocation(shader, "tiling");
+//   u64 mesh_count = cvec_header(renderer->meshes)->size;
+//   for (u64 i = 0; i < mesh_count; i++)
+//   {
+//     for (u64 j = 0; j < vertexCount; j++)
+//     {
+//       renderer->meshes[i].texcoords[j]
+//     }
+//   }
+// }
 
 
 int
