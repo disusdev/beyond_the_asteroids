@@ -495,7 +495,7 @@ damage_entity(i32 entity_id, i32 dmg)
     Matrix transform = component_system_get_global_transform(entity_id);
     add_animation(entity_id, extract_position(&transform), 0);
     create_asteroid();
-    score++;
+    score += 100;
     return true;
   }
   play_once(SFX_ASTEROID_HIT);

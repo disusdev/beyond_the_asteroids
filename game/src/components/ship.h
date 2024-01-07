@@ -414,7 +414,11 @@ ship_system_update(f32 dt, void (*end)())
 
     component_system_set_local_transform(ship->entity_id, transform);
 
-    ship->fuel -= real_speed * dt * 0.1f;
+
+    t_co_health* health = component_system_entity_get_component(ship->entity_id, "co_health");
+    f32 multi = Lerp(0.1f, 0.9f, 1.0f - (health->health / 300.0f));
+
+    ship->fuel -= real_speed * dt * multi;
     if (ship->fuel < 0)
     {
       ship->fuel = 0;
