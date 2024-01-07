@@ -414,7 +414,7 @@ ship_system_update(f32 dt, void (*end)())
 
     component_system_set_local_transform(ship->entity_id, transform);
 
-    ship->fuel -= real_speed * dt;
+    ship->fuel -= real_speed * dt * 0.1f;
     if (ship->fuel < 0)
     {
       ship->fuel = 0;

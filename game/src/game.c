@@ -315,7 +315,7 @@ add_animation(int entity_id, Vector3 pos, i32 layer)
   else
   if (layer == 1)
   {
-    anim.id = 3;
+    anim.id = 2;
   }
 
   Vector2 screen_pos = GetWorldToScreen(pos, camera_system_get_camera());
@@ -429,23 +429,59 @@ respawn_handle(int entity_id)
 void
 collision_handle(t_co_collision* c1, t_co_collision* c2)
 {
-  if (health_system_on_health_change(c1->entity_id, -100))
+  if (c1->layer == 0)
   {
-    Matrix transform = component_system_get_global_transform(c1->entity_id);
-    add_animation(c1->entity_id, extract_position(&transform), c1->layer);
-    if (c1->layer != 1)
+    if (health_system_on_health_change(c1->entity_id, -50))
     {
+      Matrix transform = component_system_get_global_transform(c1->entity_id);
+      add_animation(c1->entity_id, extract_position(&transform), c1->layer);
       create_asteroid();
     }
-  }
-
-  if (health_system_on_health_change(c2->entity_id, -100) && c1->entity_id != c2->entity_id)
-  {
-    Matrix transform = component_system_get_global_transform(c2->entity_id);
-    add_animation(c2->entity_id, extract_position(&transform), c2->layer);
-    if (c2->layer != 1)
+    else
     {
+      component_system_add_local_transform(c1->entity_id, MatrixTranslate(c1->normal.x, c1->normal.y, c1->normal.z));
+      // component_system_add_local_transform(c1->entity_id, MatrixRotateY(180 * DEG2RAD));
+      t_co_asteroid* asteroid = component_system_entity_get_component(c1->entity_id, "co_asteroid");
+      asteroid->current_angle += 180 * DEG2RAD;
+    }
+  }
+  else
+  if (c1->layer == 1)
+  {
+    if (health_system_on_health_change(c1->entity_id, -100))
+    {
+      Matrix transform = component_system_get_global_transform(c1->entity_id);
+      add_animation(c1->entity_id, extract_position(&transform), c1->layer);
+      // @todo save score
+    }
+  }
+  
+  if (c1->entity_id != c2->entity_id) return;
+  
+  if (c2->layer == 0)
+  {
+    if (health_system_on_health_change(c2->entity_id, -50))
+    {
+      Matrix transform = component_system_get_global_transform(c2->entity_id);
+      add_animation(c2->entity_id, extract_position(&transform), c2->layer);
       create_asteroid();
+    }
+    else
+    {
+      component_system_add_local_transform(c2->entity_id, MatrixTranslate(c2->normal.x, c2->normal.y, c2->normal.z));
+      // component_system_add_local_transform(c2->entity_id, MatrixRotateY(180 * DEG2RAD));
+      t_co_asteroid* asteroid = component_system_entity_get_component(c2->entity_id, "co_asteroid");
+      asteroid->current_angle += 180 * DEG2RAD;
+    }
+  }
+  else
+  if (c2->layer == 1)
+  {
+    if (health_system_on_health_change(c2->entity_id, -100))
+    {
+      Matrix transform = component_system_get_global_transform(c2->entity_id);
+      add_animation(c2->entity_id, extract_position(&transform), c2->layer);
+      // @todo save score
     }
   }
 }
@@ -493,7 +529,7 @@ play_explosion(t_sprite_anim* anim)
 void
 update_sprites()
 {
-  u64 count = cvec_header(animations)->size;  
+  u64 count = cvec_header(animations)->size;
 
   for (u64 i = 0, r = count - 1; i < count; i++, r--)
   {
@@ -595,12 +631,21 @@ menu_exit()
 t_buttons_wheal
 create_menu_wheal()
 {
+#if defined(PLATFORM_WEB)
+  t_buttons_wheal wheal =
+  {
+    { "Play", "Options" },
+    { &menu_play, &menu_options },
+    2, 0, - 45 * DEG2RAD
+  };
+#else
   t_buttons_wheal wheal =
   {
     { "Play", "Options", "Exit" },
     { &menu_play, &menu_options, &menu_exit },
     3, 0, - 45 * DEG2RAD
   };
+#endif
   
   return wheal;
 }
@@ -886,6 +931,7 @@ game_update(f32 dt)
     {
       if (IsKeyPressed(KEY_SPACE))
       {
+        score = 0;
         int id = component_system_pop("co_ship");
         component_system_set_local_transform(id, MatrixTranslate(0, 1, 0));
         component_system_update_global_transform(id);

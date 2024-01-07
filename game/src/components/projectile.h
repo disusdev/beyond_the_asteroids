@@ -25,7 +25,7 @@ co_projectile_create(int entity_id, int cfg_id)
 {
   t_co_projectile proj = {0};
   proj.entity_id = entity_id;
-  proj.speed = 30.0f;
+  proj.speed = 40.0f;
   proj.life_timer = 3.0f;
   proj.target_id = -1;
 
@@ -104,7 +104,7 @@ projectile_system_update(f32 dt, b32 (*damage)(i32, i32))
       
       if (CheckCollisionSpheres(c1_pos, collisions[j].radius, extract_position(&transform), 0.2f))
       {
-        if (damage(collisions[j].entity_id, 10))
+        if (damage(collisions[j].entity_id, 20))
         {
           projs[i].ship->target = -1;
         }

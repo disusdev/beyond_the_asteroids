@@ -133,10 +133,6 @@ engine_create(t_app* app)
   mesh_system_init();
   component_system_init();
   scene_system_init();
-  
-  
-
-  
 
   // SetTraceLogLevel(RL_LOG_ERROR);
   InitWindow(app->window_size_x, app->window_size_y, app->name);
@@ -235,6 +231,8 @@ engine_run()
   // }
 
   // float runTime = 0.0f;
+  
+  SetExitKey(KEY_F12);
 
   while(engine.is_running)
   {

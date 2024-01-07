@@ -109,6 +109,10 @@ component_system_set_local_transform(i32 idx, Matrix transform);
 
 
 void
+component_system_add_local_transform(i32 idx, Matrix transform);
+
+
+void
 component_system_update_global_transform(int entity_id);
 
 

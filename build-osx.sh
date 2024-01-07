@@ -147,11 +147,11 @@ cd $OUTPUT_DIR
 [ -z "$QUIET" ] && echo "COMPILE-INFO: Compiling game code."
 if [ -n "$REALLY_QUIET" ]; then
     $CC -c -I$RAYLIB_SRC -I$RAYGUI_SRC -I$SRC_DIR -I$ENGINE_SRC_DIR $SOURCES $COMPILATION_FLAGS $WARNING_FLAGS > /dev/null 2>&1
-    $CC -o $GAME_NAME $ROOT_DIR/$TEMP_DIR/*.o *.o $LINK_FLAGS > /dev/null 2>&1
+    $CC -o $GAME_NAME $ROOT_DIR/$TEMP_DIR/*.o *.o $LINK_FLAGS -DPLATFORM_DESKTOP > /dev/null 2>&1
 else
     echo *.o
     $CC -c -I$RAYLIB_SRC -I$RAYGUI_SRC -I$SRC_DIR -I$ENGINE_SRC_DIR $SOURCES $COMPILATION_FLAGS $WARNING_FLAGS
-    $CC -o $GAME_NAME $ROOT_DIR/$TEMP_DIR/*.o *.o $LINK_FLAGS
+    $CC -o $GAME_NAME $ROOT_DIR/$TEMP_DIR/*.o *.o $LINK_FLAGS -DPLATFORM_DESKTOP
 fi
 rm *.o
 [ -z "$QUIET" ] && echo "COMPILE-INFO: Game compiled into an executable in: $OUTPUT_DIR/"

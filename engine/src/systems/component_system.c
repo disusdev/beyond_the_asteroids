@@ -107,6 +107,13 @@ component_system_get_global_transform(i32 idx)
 }
 
 
+void
+component_system_add_local_transform(i32 idx, Matrix transform)
+{
+  MatrixMultiply(states[current_state].local_transforms[idx], transform);
+}
+
+
 static void
 childs_apply(int idx, void (*apply)(int idx));
 

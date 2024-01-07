@@ -12,6 +12,7 @@ typedef struct co_collision
   Vector3 offset;
   f32 radius;
   i32 layer;
+  Vector3 normal;
   void (*collide_callback)(struct co_collision*, struct co_collision*);
 } t_co_collision;
 
@@ -64,6 +65,9 @@ check_collision(t_co_collision* c1,
 
   if (CheckCollisionSpheres(c1_pos, c1->radius, c2_pos, c2->radius))
   {
+    c1->normal = Vector3Normalize(Vector3Subtract(c1_pos, c2_pos));
+    c2->normal = Vector3Normalize(Vector3Subtract(c2_pos, c1_pos));
+  
     if (c1->collide_callback)
     {
       c1->collide_callback(c1, c2);
