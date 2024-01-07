@@ -1,4 +1,7 @@
 #include <entry.h>
+
+#define AUDIO_DEVICE_SAMPLE_RATE 48000
+
 #include <raylib.h>
 
 #include <systems/component_system.h>
@@ -11,6 +14,12 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+
+#if defined(PLATFORM_DESKTOP)
+#define GLSL_VERSION 330
+#else
+#define GLSL_VERSION 100
+#endif
 
 static int WINDOW_WIDTH = 1920;
 static int WINDOW_HEIGHT = 1080;
@@ -136,8 +145,8 @@ typedef struct
 } t_sprite_anim;
 
 
-static Mesh grid_mesh;
-static Shader grid_shader;
+// static Mesh grid_mesh;
+// static Shader grid_shader;
 #define EXPLOSION_COUNT 4
 static Texture2D explosion[EXPLOSION_COUNT];
 i32 explosion_frame = 0;
@@ -157,9 +166,6 @@ static i32 score = 0;
 void
 load_textures()
 {
-  background = LoadTexture("data/bg/space.png");
-  SetTextureWrap(background, TEXTURE_WRAP_REPEAT);
-
   explosion[0] = LoadTexture("data/sprites/fire/full_explosion_0.png");
   explosion[1] = LoadTexture("data/sprites/fire/full_explosion_1.png");
   explosion[2] = LoadTexture("data/sprites/fire/full_explosion_2.png");
@@ -668,6 +674,7 @@ update_wheal(t_buttons_wheal* wheal)
   }
 }
 
+static i32 hower_select = -1;
 
 void
 draw_wheal(t_buttons_wheal* wheal)
@@ -696,6 +703,7 @@ draw_wheal(t_buttons_wheal* wheal)
           mouse_pos.y > min_y &&
           mouse_pos.y < max_y)
       {
+        play_once_ui(SFX_UI_SELECT);
         wheal->current = i;
         wheal->options_callbacks[wheal->current]();
       }
@@ -707,6 +715,11 @@ draw_wheal(t_buttons_wheal* wheal)
           mouse_pos.y > min_y &&
           mouse_pos.y < max_y)
       {
+        if (hower_select != i)
+        {
+          play_once_ui(SFX_UI_SCROLL);
+        }
+        hower_select = i;
         mouse_hover = i;
       }
     }
@@ -772,10 +785,10 @@ game_init()
   camera_system_add_cfg((t_co_camera_cfg){ 0, 85.0f, CAMERA_PERSPECTIVE, 2});
   camera_system_add_cfg((t_co_camera_cfg){ 1, 45.0f, CAMERA_PERSPECTIVE, 1});
 
-  cvec(u8) ip_vs = shader_load("data/shaders/glsl330/infinite_plane.vs");
-  cvec(u8) ip_fs = shader_load("data/shaders/glsl330/infinite_plane.fs");
-  grid_shader = LoadShaderFromMemory(ip_vs, ip_fs);
-  grid_mesh = GenMeshPlane(1, 1, 1, 1);
+  // cvec(u8) ip_vs = shader_load(TextFormat("data/shaders/glsl%i/infinite_plane.vs", GLSL_VERSION));
+  // cvec(u8) ip_fs = shader_load(TextFormat("data/shaders/glsl%i/infinite_plane.fs", GLSL_VERSION));
+  // grid_shader = LoadShaderFromMemory(ip_vs, ip_fs);
+  // grid_mesh = GenMeshPlane(1, 1, 1, 1);
 
   int ship_id = component_system_create_entity(-1);
   component_system_set_local_transform(ship_id, MatrixTranslate(0, 1, 0));
@@ -828,12 +841,13 @@ game_init()
   component_system_set_local_transform(space_id, MatrixTranslate(0, -3, 0));
   int space_renderer_id = component_system_create_component_by_cfg(space_id, "co_renderer", 5);
   t_co_renderer* renderers = component_system_get("co_renderer", 0);
-  Texture2D texture = LoadTexture("data/bg/space.png");
+  Texture2D texture = LoadTexture("data/bg/space_2.png");
+  SetTextureWrap(texture, TEXTURE_WRAP_REPEAT);
   co_renderer_set_texture(&renderers[space_renderer_id], texture);
   
-  tiling_shader = LoadShader(0, TextFormat("data/shaders/glsl%i/tiling.fs", 330));
+  tiling_shader = LoadShader(0, TextFormat("data/shaders/glsl%i/tiling.fs", GLSL_VERSION));
   
-  float tiling[2] = { 1.5f, 1.5f };
+  float tiling[2] = { 2.0f, 2.0f };
   SetShaderValue(tiling_shader, GetShaderLocation(tiling_shader, "tiling"), tiling, SHADER_UNIFORM_VEC2);
   
   float offset[2] = { 1.5f, 1.0f };
@@ -1082,12 +1096,12 @@ game_draw_ui()
     sprintf(hp_points_str, "FUEL: %.0f", ship->fuel);
     DrawText(hp_points_str, GetScreenWidth() - MeasureText(hp_points_str, 20) - 20, 20, 20, RAYWHITE);
 
-    int fps = GetFPS();
-    sprintf(hp_points_str, "%d", fps);
-    DrawText(hp_points_str, 20, 20, 20, fps < 30 ? RED : (fps < 60 ? YELLOW : GREEN));
+    // int fps = GetFPS();
+    // sprintf(hp_points_str, "%d", fps);
+    // DrawText(hp_points_str, 20, 20, 20, fps < 30 ? RED : (fps < 60 ? YELLOW : GREEN));
 
     sprintf(hp_points_str, "%dHP", ship_hp->health);
-    DrawText(hp_points_str, 20, 45, 20, ship_hp->is_dead ? RED : RAYWHITE);
+    DrawText(hp_points_str, 20, 20, 20, ship_hp->is_dead ? RED : RAYWHITE);
 
     // Camera camera = camera_system_get_camera();
     // sprintf(hp_points_str, "[ %f %f %f ]", camera.position.x, camera.position.y, camera.position.z);
@@ -1147,7 +1161,7 @@ game_pre_render(f32 dt)
   {
   case GAME_STATE_MENU:
   {
-    float tiling[2] = { 3.0f, 3.0f };
+    float tiling[2] = { 3.5f, 3.5f };
     SetShaderValue(tiling_shader, GetShaderLocation(tiling_shader, "tiling"), tiling, SHADER_UNIFORM_VEC2);
   
     alternative_offset += dt;
@@ -1156,7 +1170,7 @@ game_pre_render(f32 dt)
   } break;
   case GAME_STATE_GAME:
   {
-    float tiling[2] = { 1.5f, 1.5f };
+    float tiling[2] = { 2.0f, 2.0f };
     SetShaderValue(tiling_shader, GetShaderLocation(tiling_shader, "tiling"), tiling, SHADER_UNIFORM_VEC2);
   
     float offset[2] = { pos.x * x_mult, pos.z * y_mult };
