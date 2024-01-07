@@ -15,7 +15,7 @@
 #include <string.h>
 #include <stdio.h>
 
-#if defined(PLATFORM_DESKTOP)
+#if defined(PLATFORM_DESKTOP) && !defined(__APPLE__)
 #define GLSL_VERSION 330
 #else
 #define GLSL_VERSION 100
