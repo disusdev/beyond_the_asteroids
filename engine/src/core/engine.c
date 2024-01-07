@@ -134,16 +134,17 @@ engine_create(t_app* app)
   component_system_init();
   scene_system_init();
 
+  SetConfigFlags(FLAG_MSAA_4X_HINT);
+  
   // SetTraceLogLevel(RL_LOG_ERROR);
   InitWindow(app->window_size_x, app->window_size_y, app->name);
   
-  //SetConfigFlags(FLAG_WINDOW_UNDECORATED);
 
 #ifdef START_FULL_SCREEN
-  SetWindowState(FLAG_VSYNC_HINT | FLAG_WINDOW_RESIZABLE | FLAG_WINDOW_HIGHDPI | FLAG_MSAA_4X_HINT);
+  SetWindowState(FLAG_VSYNC_HINT | FLAG_WINDOW_RESIZABLE);
   ToggleFullscreen();
 #else
-  SetWindowState(FLAG_VSYNC_HINT | FLAG_WINDOW_HIGHDPI | FLAG_WINDOW_RESIZABLE | FLAG_MSAA_4X_HINT);
+  SetWindowState(FLAG_VSYNC_HINT | FLAG_WINDOW_RESIZABLE);
 #endif
 
   SetTargetFPS(60);

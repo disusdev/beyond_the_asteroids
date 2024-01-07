@@ -131,6 +131,7 @@ stop_music(e_music music)
 #include "components/gun.h"
 #include "components/projectile.h"
 #include "components/pickup.h"
+#include "components/particle.h"
 
 #include <containers/ctbl.h>
 
@@ -817,6 +818,7 @@ game_init()
   gun_system_init();
   projectile_system_init();
   pickup_system_init();
+  particle_system_init();
 
   load_textures();
   animations = cvec_create(sizeof(t_sprite_anim), 32, false);
@@ -858,6 +860,10 @@ game_init()
 
   t_co_ship* ships = component_system_get("co_ship", 0);
   ship = &ships[ship_co_id];
+  
+  int particle_id = component_system_create_entity(ship_id);
+  component_system_set_local_transform(particle_id, MatrixTranslate(0, 0, -2.3));
+  component_system_create_component(particle_id, "co_particle_system");
 
   t_co_gun* guns = component_system_get("co_gun", 0);
   guns[gun_id].ship = ship;
@@ -956,6 +962,7 @@ game_update(f32 dt)
       gun_system_update(dt);
       projectile_system_update(dt, &damage_entity);
       pickup_system_update(dt);
+      particle_system_update(dt);
     }
   } break;
   }
@@ -1168,6 +1175,7 @@ game_draw_ui()
 
 
 
+  particle_system_draw();
   update_sprites();
 }
 
@@ -1203,9 +1211,16 @@ game_pre_render(f32 dt)
   Matrix transform = component_system_get_global_transform(camera_id);
   Vector3 pos = extract_position(&transform);
   
-  f32 x_mult = 1 / 88.2;
-  f32 y_mult = 1 / 49.6;
+  f32 x_mult = 0.0114f;// / 88.2;
+  f32 y_mult = 0.0114f;// / 49.6;
 
+  Matrix plane_transform_prev = component_system_get_local_transform(space_id);
+  Vector3 plane_prev_pos = extract_position(&plane_transform_prev);
+  
+  pos.y = -3;
+  
+  Vector3 offset = Vector3Subtract(plane_prev_pos, pos);
+  
   switch (state)
   {
   case GAME_STATE_MENU:
