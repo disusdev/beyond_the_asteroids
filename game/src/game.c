@@ -1,7 +1,5 @@
 #include <entry.h>
 
-#define AUDIO_DEVICE_SAMPLE_RATE 48000
-
 #include <raylib.h>
 
 #include <systems/component_system.h>
@@ -15,7 +13,7 @@
 #include <string.h>
 #include <stdio.h>
 
-#if defined(PLATFORM_DESKTOP) && !defined(__APPLE__)
+#if defined(PLATFORM_DESKTOP)
 #define GLSL_VERSION 330
 #else
 #define GLSL_VERSION 100
@@ -63,26 +61,26 @@ typedef enum
 
 const char* music_path[] =
 {
-  "data/audio/cosmohunter_game_loop.wav",
-  "data/audio/cosmohunter_menu_loop.wav",
-  "data/audio/space_ship_move_loop.wav",
-  "data/audio/spaceship_low_fuel.wav"
+  "data/audio/cosmohunter_game_loop.ogg",
+  "data/audio/cosmohunter_menu_loop.ogg",
+  "data/audio/space_ship_move_loop.ogg",
+  "data/audio/spaceship_low_fuel.ogg"
 };
 
 const char* sfx_path[] =
 {
-  "data/audio/space_collision.wav",
-  "data/audio/space_ship_fire.wav",
-  "data/audio/space_ship_lunch.wav",
-  "data/audio/spaceship_low_health.wav",
-  "data/audio/spaceship_pick_up.wav",
-  "data/audio/asteroid_hitted.wav",
-  "data/audio/space_ship_stops.wav",
+  "data/audio/space_collision.ogg",
+  "data/audio/space_ship_fire.ogg",
+  "data/audio/space_ship_lunch.ogg",
+  "data/audio/spaceship_low_health.ogg",
+  "data/audio/spaceship_pick_up.ogg",
+  "data/audio/asteroid_hitted.ogg",
+  "data/audio/space_ship_stops.ogg",
   
-  "data/audio/ui_back.wav",
-  "data/audio/ui_scroll.wav",
-  "data/audio/ui_select.wav",
-  "data/audio/ui_start.wav",
+  "data/audio/ui_back.ogg",
+  "data/audio/ui_scroll.ogg",
+  "data/audio/ui_select.ogg",
+  "data/audio/ui_start.ogg",
 };
 
 Music music_tbl[MUSIC_COUNT] = {0};
@@ -149,6 +147,7 @@ typedef struct
 // static Shader grid_shader;
 #define EXPLOSION_COUNT 4
 static Texture2D explosion[EXPLOSION_COUNT];
+i32 explosion_scale = 2;
 i32 explosion_frame = 0;
 f32 explosion_time = 0;
 
@@ -162,20 +161,24 @@ t_co_ship* ship = 0;
 
 static i32 score = 0;
 
+b32 sfx_mute = false;
+b32 music_mute = false;
+
 
 void
 load_textures()
 {
-  explosion[0] = LoadTexture("data/sprites/fire/full_explosion_0.png");
-  explosion[1] = LoadTexture("data/sprites/fire/full_explosion_1.png");
-  explosion[2] = LoadTexture("data/sprites/fire/full_explosion_2.png");
-  explosion[3] = LoadTexture("data/sprites/fire/full_explosion_3.png");
+  explosion[0] = LoadTexture("data/sprites/fire/explosion_0.png");
+  explosion[1] = LoadTexture("data/sprites/fire/explosion_1.png");
+  explosion[2] = LoadTexture("data/sprites/fire/explosion_2.png");
+  explosion[3] = LoadTexture("data/sprites/fire/explosion_3.png");
 }
 
 
 void
 update_music()
 {
+  if (music_mute) return;
   for (u64 i = 0; i < MUSIC_COUNT; i++)
   {
     UpdateMusicStream(music_tbl[i]);
@@ -517,9 +520,11 @@ play_explosion(t_sprite_anim* anim)
 
   rect.x = size * (anim->frame % count_per_raw);
   rect.y = size * (anim->frame / count_per_raw);
+  
+  Rectangle dst_rect = { pos.x - size * explosion_scale / 2, pos.y - size * explosion_scale / 2, fabsf(rect.width * explosion_scale), fabsf(rect.height * explosion_scale) };
+  Vector2 origin = { 0.0f, 0.0f };
 
-  DrawTextureRec(explosion[anim->id], rect, (Vector2) {pos.x - size / 2, pos.y - size / 2}, WHITE);
-
+  DrawTexturePro(explosion[anim->id], rect, dst_rect, origin, 0.0f, WHITE);
   anim->frame += 1;
 
   return anim->frame > (count_per_raw * count_per_raw);
@@ -651,24 +656,22 @@ create_menu_wheal()
 }
 
 
-b32 sfx_mute = false;
 void
 options_sfx()
 {
   sfx_mute = !sfx_mute;
-  options_wheal.options_labels[0] = sfx_mute ? "Unmute Music" : "Mute Music";
+  options_wheal.options_labels[0] = sfx_mute ? "Unmute Sfx" : "Mute Sfx";
   for (u64 i = 0; i < SFX_COUNT; i++)
   {
     SetSoundVolume(sfx_tbl[i], !sfx_mute);
   }
 }
 
-b32 music_mute = false;
 void
 options_music()
 {
   music_mute = !music_mute;
-  options_wheal.options_labels[1] = music_mute ? "Unmute Sfx" : "Mute Sfx";
+  options_wheal.options_labels[1] = music_mute ? "Unmute Music" : "Mute Music";
   for (u64 i = 0; i < MUSIC_COUNT; i++)
   {
     SetMusicVolume(music_tbl[i], !music_mute);
