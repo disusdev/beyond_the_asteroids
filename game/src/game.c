@@ -29,6 +29,29 @@ static int WINDOW_HEIGHT = 1080;
 i32 max_score = 0;
 i32 score = 0;
 
+i32 boost_counter = 3;
+i32 score_boost = 1000;
+
+static void
+create_asteroid();
+
+void
+add_score(i32 points)
+{
+  score += points;
+  
+  score_boost -= points;
+  if (score_boost <= 0)
+  {
+    score_boost = 1000;
+    for (int i = 0; i < boost_counter; i++)
+    {
+      create_asteroid();
+    }
+    boost_counter *= 3;
+  }
+}
+
 void
 save_score()
 {
@@ -385,7 +408,7 @@ add_animation(int entity_id, Vector3 pos, i32 layer)
 }
 
 
-static void
+void
 create_asteroid()
 {
   // get pos outside the screen!
@@ -536,7 +559,7 @@ damage_entity(i32 entity_id, i32 dmg)
     Matrix transform = component_system_get_global_transform(entity_id);
     add_animation(entity_id, extract_position(&transform), 0);
     create_asteroid();
-    score += 100;
+    add_score(100);
     return true;
   }
   play_once(SFX_ASTEROID_HIT);
@@ -632,6 +655,7 @@ typedef struct
   i32 entity_id;
   i32 options_entities[6];
   b32 blocked;
+  const char* tag;
 } t_buttons_wheal;
 
 
@@ -767,13 +791,15 @@ create_credits_wheal()
       "Oleksandr Melnichenko",
       "",
       "Sound & Music: ",
-      "Aleksander Zaleski" },
+      "Aleksander Zaleski"
+    },
     { &credits_return, &credits_return, &credits_return, &credits_return, &credits_return },
     5, 0, - 45 * DEG2RAD
   };
   
   wheal.current = 2;
   wheal.blocked = true;
+  wheal.tag = "credits";
   
   return wheal;
 }
@@ -879,6 +905,27 @@ draw_wheal(t_buttons_wheal* wheal)
     }
 
     start_y += font_size + 60;
+  }
+  
+  if (wheal->tag && wheal->tag == "credits")
+  {
+    const char* assets_str[] =
+    {
+      "Assets from OpenGameArt.org:  ",
+      "CarzyMoose - background | ",
+      "quaternius - spaceship | ",
+      "Michael Kurinnoy - asteroids | ",
+      "oglsdl - first aid | ",
+      "para - low poly rocks | ",
+      "Yughues - fuel tank pack"
+    };
+    
+    i32 start_x = 26;
+    for (u32 i = 0; i < 7; i++)
+    {
+      DrawText(assets_str[i], start_x, GetScreenHeight() - 20 - 10, 20, WHITE);
+      start_x += MeasureText(assets_str[i], 20);
+    }
   }
 }
 
