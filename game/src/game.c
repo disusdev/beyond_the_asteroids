@@ -41,15 +41,19 @@ add_score(i32 points)
   score += points;
   
   score_boost -= points;
-  if (score_boost <= 0)
-  {
-    score_boost = 1000;
-    for (int i = 0; i < boost_counter; i++)
-    {
-      create_asteroid();
-    }
-    boost_counter *= 3;
-  }
+  
+  // @todo there is no asteroid destruction on
+  //       game restart which will lead to the
+  //       same ammount of the asteroids after restart.
+  // if (score_boost <= 0)
+  // {
+  //   score_boost = 1000;
+  //   for (int i = 0; i < boost_counter; i++)
+  //   {
+  //     create_asteroid();
+  //   }
+  //   boost_counter *= 3;
+  // }
 }
 
 void
