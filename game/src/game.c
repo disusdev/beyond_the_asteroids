@@ -6,6 +6,10 @@
 #include <systems/scene_system.h>
 #include <systems/shaders.h>
 
+#if defined(PLATFORM_WEB)
+#include <emscripten.h>
+#endif
+
 #include <raygui.h>
 #include <rlgl.h>
 
@@ -22,7 +26,36 @@
 static int WINDOW_WIDTH = 1920;
 static int WINDOW_HEIGHT = 1080;
 
+i32 max_score = 0;
 i32 score = 0;
+
+void
+save_score()
+{
+#if defined(PLATFORM_WEB)
+  // @todo save with IDBFS
+#else
+  max_score = MAX(score, max_score);
+  FILE* file = fopen("data/score.sv", "wb+");
+  fwrite(&max_score, sizeof(i32), 1, file);
+  fclose(file);
+#endif
+}
+
+void
+read_score()
+{
+#if defined(PLATFORM_WEB)
+  // @todo save with IDBFS
+#else
+  FILE* file = fopen("data/score.sv", "rb+");
+  if (file)
+  {
+    fread(&max_score, sizeof(i32), 1, file);
+    fclose(file);
+  }
+#endif
+}
 
 typedef enum
 {
@@ -93,7 +126,6 @@ void
 play_once(e_sfx sfx)
 {
   if (state == GAME_STATE_MENU) return;
-  // RayPlaySound(sfx_tbl[sfx]);
   PlaySound(sfx_tbl[sfx]);
 }
 
@@ -101,8 +133,6 @@ play_once(e_sfx sfx)
 void
 play_once_ui(e_sfx sfx)
 {
-  //if (state == GAME_STATE_MENU) return;
-  // RayPlaySound(sfx_tbl[sfx]);
   PlaySound(sfx_tbl[sfx]);
 }
 
@@ -110,7 +140,6 @@ play_once_ui(e_sfx sfx)
 void
 play_music(e_music music)
 {
-  //if (!IsMusicStreamPlaying(music_tbl[music]))
   PlayMusicStream(music_tbl[music]);
 }
 
@@ -118,7 +147,6 @@ play_music(e_music music)
 void
 stop_music(e_music music)
 {
-  //if (IsMusicStreamPlaying(music_tbl[music]))
   StopMusicStream(music_tbl[music]);
 }
 
@@ -188,14 +216,13 @@ update_music()
 }
 
 
-static float exponent = 1.0f;                 // Audio exponentiation value
-static float averageVolume[400] = { 0.0f };   // Average volume history
+static float exponent = 1.0f;
+static float averageVolume[400] = { 0.0f };
 
 void ProcessAudio(void *buffer, unsigned int frames)
 {
-    float *samples = (float *)buffer;   // Samples internally stored as <float>s
-    float average = 0.0f;               // Temporary average volume
-
+    float *samples = (float *)buffer;
+    float average = 0.0f;
     for (unsigned int frame = 0; frame < frames; frame++)
     {
         float *left = &samples[frame * 2 + 0], *right = &samples[frame * 2 + 1];
@@ -203,14 +230,11 @@ void ProcessAudio(void *buffer, unsigned int frames)
         *left = powf(fabsf(*left), exponent) * ( (*left < 0.0f)? -1.0f : 1.0f );
         *right = powf(fabsf(*right), exponent) * ( (*right < 0.0f)? -1.0f : 1.0f );
 
-        average += fabsf(*left) / frames;   // accumulating average volume
+        average += fabsf(*left) / frames;
         average += fabsf(*right) / frames;
     }
-
-    // Moving history to the left
     for (int i = 0; i < 399; i++) averageVolume[i] = averageVolume[i + 1];
-
-    averageVolume[399] = average;         // Adding last average value
+    averageVolume[399] = average;
 }
 
 
@@ -280,12 +304,25 @@ create_pickup(Vector3 position)
   {
     ent_id = component_system_create_entity(-1);
     pickup = cast_ptr(t_co_pickup) component_system_create_component_ptr(ent_id, "co_pickup");
+    component_system_create_component_by_cfg(ent_id, "co_renderer", 4);
   }
   else
   {
     pickup = cast_ptr(t_co_pickup) component_system_entity_get_component(ent_id, "co_pickup");
   }
-  pickup->fuel = GetRandomValue(10, 50);
+  
+  t_co_renderer* renderer = component_system_entity_get_component(ent_id, "co_renderer");
+  
+  if (GetRandomValue(0, 1))
+  {
+    pickup->fuel = GetRandomValue(10, 30);
+    co_renderer_set_model_by_cfg(renderer, 4);
+  }
+  else
+  {
+    pickup->hp = GetRandomValue(10, 30);
+    co_renderer_set_model_by_cfg(renderer, 6);
+  }
 
   component_system_set_local_transform(ent_id, MatrixTranslate(position.x, position.y, position.z));
   component_system_update_global_transform(ent_id);
@@ -446,7 +483,6 @@ collision_handle(t_co_collision* c1, t_co_collision* c2)
     else
     {
       component_system_add_local_transform(c1->entity_id, MatrixTranslate(c1->normal.x, c1->normal.y, c1->normal.z));
-      // component_system_add_local_transform(c1->entity_id, MatrixRotateY(180 * DEG2RAD));
       t_co_asteroid* asteroid = component_system_entity_get_component(c1->entity_id, "co_asteroid");
       asteroid->current_angle += 180 * DEG2RAD;
     }
@@ -458,7 +494,7 @@ collision_handle(t_co_collision* c1, t_co_collision* c2)
     {
       Matrix transform = component_system_get_global_transform(c1->entity_id);
       add_animation(c1->entity_id, extract_position(&transform), c1->layer);
-      // @todo save score
+      save_score();
     }
   }
   
@@ -475,7 +511,6 @@ collision_handle(t_co_collision* c1, t_co_collision* c2)
     else
     {
       component_system_add_local_transform(c2->entity_id, MatrixTranslate(c2->normal.x, c2->normal.y, c2->normal.z));
-      // component_system_add_local_transform(c2->entity_id, MatrixRotateY(180 * DEG2RAD));
       t_co_asteroid* asteroid = component_system_entity_get_component(c2->entity_id, "co_asteroid");
       asteroid->current_angle += 180 * DEG2RAD;
     }
@@ -487,7 +522,7 @@ collision_handle(t_co_collision* c1, t_co_collision* c2)
     {
       Matrix transform = component_system_get_global_transform(c2->entity_id);
       add_animation(c2->entity_id, extract_position(&transform), c2->layer);
-      // @todo save score
+      save_score();
     }
   }
 }
@@ -799,8 +834,12 @@ draw_wheal(t_buttons_wheal* wheal)
           mouse_pos.y < max_y)
       {
         play_once_ui(SFX_UI_SELECT);
-        wheal->current = i;
-        wheal->options_callbacks[wheal->current]();
+        wheal->options_callbacks[i]();
+        
+        if (!wheal->blocked)
+        {
+          wheal->current = i;
+        }
       }
     }
     else
@@ -851,6 +890,8 @@ int space_id;
 void
 game_init()
 {
+  read_score();
+  
   renderer_system_init();
   animation_system_init();
   camera_system_init();
@@ -877,14 +918,10 @@ game_init()
   renderer_system_add_cfg((t_co_renderer_cfg){ 3, "data/models/ship/bob.gltf", false, -1 });
   renderer_system_add_cfg((t_co_renderer_cfg){ 4, "data/models/can/can.glb", false, -1 });
   renderer_system_add_cfg((t_co_renderer_cfg){ 5, "data/models/bg/space.glb", false, -1 });
+  renderer_system_add_cfg((t_co_renderer_cfg){ 6, "data/models/aid/aid.glb", false, -1 });
 
   camera_system_add_cfg((t_co_camera_cfg){ 0, 85.0f, CAMERA_PERSPECTIVE, 2});
   camera_system_add_cfg((t_co_camera_cfg){ 1, 45.0f, CAMERA_PERSPECTIVE, 1});
-
-  // cvec(u8) ip_vs = shader_load(TextFormat("data/shaders/glsl%i/infinite_plane.vs", GLSL_VERSION));
-  // cvec(u8) ip_fs = shader_load(TextFormat("data/shaders/glsl%i/infinite_plane.fs", GLSL_VERSION));
-  // grid_shader = LoadShaderFromMemory(ip_vs, ip_fs);
-  // grid_mesh = GenMeshPlane(1, 1, 1, 1);
 
   int ship_id = component_system_create_entity(-1);
   component_system_set_local_transform(ship_id, MatrixTranslate(0, 1, 0));
@@ -1066,13 +1103,6 @@ game_render(f32 dt)
 {
   (void)dt;
 
-  // for (u32 i = 0; i < menu_wheal.count; i++)
-  // {
-  //   Matrix transform = component_system_get_global_transform(menu_wheal.options_entities[i]);
-  //   Vector3 pos = extract_position(&transform);
-  //   DrawSphere(pos, 1.0f, GOLD);
-  // }
-
 	u64 count = 0;
   t_co_ship* ships = cast_ptr(t_co_ship) component_system_get("co_ship", &count);
 
@@ -1110,10 +1140,6 @@ game_render(f32 dt)
         ships[i].target = -1;
         return;
       }
-      Matrix target_transform = component_system_get_global_transform(ships[i].target);
-      Vector3 target_position = extract_position(&target_transform);
-      DrawLine3D(ship_position, target_position, RED);
-
     }
 
     if (cursor_on_target())
@@ -1122,33 +1148,6 @@ game_render(f32 dt)
       DrawCircle3D(ship_position, 20, (Vector3){1,0,0}, rotcircle, RED);
     }
   }
-
-  // if (!in_move)
-  // {
-	//   for (u64 i = 0; i < count; i++)
-	//   {
-  //     Matrix transform = component_system_get_global_transform(ships[i].entity_id);
-  //     Vector3 ship_position = extract_position(&transform);
-  //     u64 points_count = cvec_header(ships[i].points)->size;
-  //     for (u64 j = 0; j < points_count; j++)
-  //     {
-  //       DrawSphere(ships[i].points[j], 0.1f, MAGENTA);
-  //     }
-
-  //     if (ships[i].target != -1)
-  //     {
-  //       t_entity* ents = component_system_get_entities(0);
-  //       if (!ents[ships[i].target].enabled)
-  //       {
-  //         ships[i].target = -1;
-  //         return;
-  //       }
-  //       Matrix target_transform = component_system_get_global_transform(ships[i].target);
-  //       Vector3 target_position = extract_position(&target_transform);
-  //       DrawLine3D(ship_position, target_position, RED);
-  //     }
-	//   }
-  // }
 
   t_co_projectile* projectiles = cast_ptr(t_co_projectile) component_system_get("co_projectile", &count);
   for (u64 i = 0; i < count; i++)
@@ -1161,35 +1160,6 @@ game_render(f32 dt)
     Vector3 pos = extract_position(&transform);
     DrawSphere(pos, 0.2f, GOLD);
   }
-  
-
-  // u64 colliders_count = 0;
-  // t_co_collision* colliders = cast_ptr(t_co_collision) component_system_get("co_collision", &colliders_count);
-	// for (u64 i = 0; i < colliders_count; i++)
-	// {
-  //   Matrix transform = component_system_get_global_transform(colliders[i].entity_id);
-  //   Vector3 pos = extract_position(&transform);
-  //   Vector3 forward = (Vector3) {transform.m8, transform.m9, transform.m10};
-  //   forward = Vector3Scale(forward, colliders[i].offset.z);
-  //   Vector3 right = (Vector3) {transform.m0, transform.m1, transform.m2};
-  //   right = Vector3Scale(right, colliders[i].offset.x);
-  //   DrawSphereWires(Vector3Add(Vector3Add(pos, forward), right), colliders[i].radius, 16, 16, GREEN);
-	// }
-
-
-  // u64 pickup_count = 0;
-  // t_co_pickup* pickups = cast_ptr(t_co_pickup) component_system_get("co_pickup", &pickup_count);
-	// for (u64 i = 0; i < pickup_count; i++)
-	// {
-  //   Matrix transform = component_system_get_global_transform(pickups[i].entity_id);
-  //   Vector3 pos = extract_position(&transform);
-  //   DrawSphereWires(pos, 1, 16, 16, GREEN);
-	// }
-
-
-	// rlDisableBackfaceCulling();
-  // renderer_system_draw_simple(grid_mesh, grid_shader);
-  // rlEnableBackfaceCulling();
 }
 
 
@@ -1200,6 +1170,10 @@ game_draw_ui()
   {
   case GAME_STATE_MENU:
   {
+    // @todo draw max score
+    char str_buffer[128] = {0};
+    sprintf(str_buffer, "HIGH SCORE: %09d", max_score);
+    DrawText(str_buffer, GetScreenWidth() / 2 - MeasureText(str_buffer, 40) / 2, 20, 40, RAYWHITE);
     draw_wheal(current_wheal);
   } break;
   case GAME_STATE_GAME:
@@ -1212,31 +1186,30 @@ game_draw_ui()
     sprintf(hp_points_str, "FUEL: %.0f", ship->fuel);
     DrawText(hp_points_str, GetScreenWidth() - MeasureText(hp_points_str, 20) - 20, 20, 20, RAYWHITE);
 
-    // int fps = GetFPS();
-    // sprintf(hp_points_str, "%d", fps);
-    // DrawText(hp_points_str, 20, 20, 20, fps < 30 ? RED : (fps < 60 ? YELLOW : GREEN));
-
     sprintf(hp_points_str, "%dHP", ship_hp->health);
     DrawText(hp_points_str, 20, 20, 20, ship_hp->is_dead ? RED : RAYWHITE);
-
-    // Camera camera = camera_system_get_camera();
-    // sprintf(hp_points_str, "[ %f %f %f ]", camera.position.x, camera.position.y, camera.position.z);
-    // DrawText(hp_points_str, 20, 70, 20, RAYWHITE);
-
-    // Vector2 mouse_pos = GetMousePosition();
-    // Ray ray = GetMouseRay(mouse_pos, camera);
-    // Plane plane = (Plane) {Vector3Zero(), (Vector3){0,-1,0}};
-    // RayCollision coll = IntersectRayPlane(ray, plane);
-
-    // sprintf(hp_points_str, "[ %f %f ]", coll.point.x - camera.position.x, coll.point.z - camera.position.z);
-    // DrawText(hp_points_str, 20, 95, 20, RAYWHITE);
+    
+    if (ship && !component_system_entity_is_enabled(ship->entity_id))
+    {
+      const char* msg = "PRESS [SPACE] TO RESTART";
+      DrawText(msg, GetScreenWidth() / 2 - MeasureText(msg, 40) / 2, GetScreenHeight() - 200, 40, RAYWHITE);
+    }
   } break;
   }
 
-
-
   particle_system_draw();
   update_sprites();
+  
+  if (ship && ship->target != -1)
+  {
+    Matrix target_transform = component_system_get_global_transform(ship->target);
+    Vector3 target_position = extract_position(&target_transform);
+    Vector2 screen_pos = GetWorldToScreen(target_position, camera_system_get_camera());
+    screen_pos.x -= 16;
+    screen_pos.y -= 32;
+    DrawTextCodepoint(GetFontDefault(), 'x', screen_pos, 64, RED);
+  }
+  
 }
 
 
@@ -1271,8 +1244,8 @@ game_pre_render(f32 dt)
   Matrix transform = component_system_get_global_transform(camera_id);
   Vector3 pos = extract_position(&transform);
   
-  f32 x_mult = 0.0114f;// / 88.2;
-  f32 y_mult = 0.0114f;// / 49.6;
+  f32 x_mult = 0.0114f;
+  f32 y_mult = 0.0114f;
 
   Matrix plane_transform_prev = component_system_get_local_transform(space_id);
   Vector3 plane_prev_pos = extract_position(&plane_transform_prev);

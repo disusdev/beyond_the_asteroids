@@ -395,7 +395,8 @@ ship_system_update(f32 dt, void (*end)())
     }
 
     forward = (Vector3) { transform.m8, transform.m9, transform.m10 };
-    ship->velocity = Vector3Scale(forward, real_speed * (ship->fuel / 100.0f));
+    f32 fuel_speed = Lerp(0.5f, 1.0f, (ship->fuel / 100.0f));
+    ship->velocity = Vector3Scale(forward, real_speed * fuel_speed);
 
     {
       f32 angle_diff = Vector2Angle((Vector2){forward.x, forward.z}, (Vector2){dir.x, dir.z});

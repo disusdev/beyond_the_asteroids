@@ -16,6 +16,9 @@ typedef struct
   i32 hp;
 
   f32 angle;
+  
+  i32 hp_entity_id;
+  i32 fuel_entity_id;
 } t_co_pickup;
 
 
@@ -49,8 +52,6 @@ pickup_create(i32 entity_id, i32 cfg_id)
   coll->layer = 5;
   coll->radius = 1;
   coll->collide_callback = &pickup_collide;
-
-  component_system_create_component_by_cfg(entity_id, "co_renderer", 4);
 
   return component_system_insert(entity_id, "co_pickup", &pickup);
 }

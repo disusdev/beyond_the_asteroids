@@ -82,6 +82,11 @@ co_renderer_set_model(t_co_renderer* renderer,
 
 
 void
+co_renderer_set_model_by_cfg(t_co_renderer* renderer,
+                             i32 cfg_id);
+
+
+void
 co_renderer_set_shader(t_co_renderer* renderer,
                        Shader shader);
 

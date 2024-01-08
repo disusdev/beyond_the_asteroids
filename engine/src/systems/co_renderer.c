@@ -394,3 +394,28 @@ void renderer_system_draw_simple(Mesh mesh, Shader shader)
 #endif
 }
 
+
+void
+co_renderer_set_model_by_cfg(t_co_renderer* renderer,
+                             i32 cfg_id)
+{
+  Model cached_model;
+  renderer->model_id = mesh_system_get_model(cfgs[cfg_id].model_path, &cached_model);
+
+  u64 meshes_size = sizeof(Mesh) * cached_model.meshCount;
+  cvec_destroy(renderer->meshes);
+  // cvec_clear(renderer->meshes);
+  renderer->meshes = cvec_create(sizeof(Mesh), cached_model.meshCount, true);
+  mem_copy(renderer->meshes, cached_model.meshes, meshes_size);
+
+  u64 materials_size = sizeof(Material) * cached_model.materialCount;
+  cvec_destroy(renderer->materials);
+  // cvec_clear(renderer->materials);
+  renderer->materials = cvec_create(sizeof(Material), cached_model.materialCount, true);
+  mem_copy(renderer->materials, cached_model.materials, materials_size);
+
+  cvec_destroy(renderer->material_map);
+  // cvec_clear(renderer->material_map);
+  renderer->material_map = cvec_create(sizeof(i32), cached_model.meshCount, true);
+  mem_copy(renderer->material_map, cached_model.meshMaterial, sizeof(i32) * cached_model.meshCount);
+}                             
