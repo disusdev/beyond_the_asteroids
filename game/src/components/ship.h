@@ -32,6 +32,8 @@ typedef struct co_ship
 
   t_co_health* health;
   f32 fuel;
+  
+  int particle_id;
 
   void (*on_death)(struct co_ship*);
 
@@ -69,6 +71,11 @@ co_ship_create_from_cfg(int entity_id, int cfg_id)
   int model_id = component_system_create_entity(entity_id);
   component_system_create_component_by_cfg(model_id, "co_renderer", 3);
   ship.model_id = model_id;
+  
+  int particle_id = component_system_create_entity(model_id);
+  component_system_set_local_transform(particle_id, MatrixTranslate(0, 0, -2.3));
+  component_system_create_component(particle_id, "co_particle_system");
+  ship.particle_id = particle_id;
 
   return component_system_insert(entity_id, "co_ship", &ship);
 }
@@ -330,6 +337,7 @@ ship_system_update(f32 dt, void (*end)())
 
   if (ship->in_move && !prev_move)
   {
+    component_system_entity_set_enabled(ship->particle_id, true);
     play_once(SFX_SHIP_LUNCH);
     play_music(MUSIC_SHIP_MOVE);
   }
@@ -387,7 +395,7 @@ ship_system_update(f32 dt, void (*end)())
     }
 
     forward = (Vector3) { transform.m8, transform.m9, transform.m10 };
-    ship->velocity = Vector3Scale(forward, real_speed);
+    ship->velocity = Vector3Scale(forward, real_speed * (ship->fuel / 100.0f));
 
     {
       f32 angle_diff = Vector2Angle((Vector2){forward.x, forward.z}, (Vector2){dir.x, dir.z});
@@ -426,6 +434,7 @@ ship_system_update(f32 dt, void (*end)())
       {
         // call end move callback
         end();
+        component_system_entity_set_enabled(ship->particle_id, false);
         play_music(MUSIC_SHIP_LOW_FUEL);
       }
       ship->reach_destination = true;
@@ -435,6 +444,7 @@ ship_system_update(f32 dt, void (*end)())
   {
     if (!ship->reach_destination)
     {
+      component_system_entity_set_enabled(ship->particle_id, false);
       play_once(SFX_SHIP_STOPS);
       // call end move callback
       end();

@@ -11,6 +11,7 @@ typedef struct
 
   int model_id;
 
+  f32 initial_speed;
   f32 speed;
   f32 rotation_speed;
   f32 tilt;
@@ -27,7 +28,8 @@ int
 co_asteroid_create_from_cfg(int entity_id, int cfg_id)
 {
   t_co_asteroid asteroid = {0};
-  asteroid.speed = GetRandomValue(1, 5);
+  asteroid.initial_speed = GetRandomValue(1, 5);
+  asteroid.speed = asteroid.initial_speed;
   asteroid.tilt = GetRandomValue(-180,180) * DEG2RAD;
   asteroid.rotation_speed = 0.05f;
   asteroid.entity_id = entity_id;
@@ -42,6 +44,19 @@ co_asteroid_create_from_cfg(int entity_id, int cfg_id)
   asteroid.angular_velocity = GetRandomValue(-3, 3);
 
   return component_system_insert(entity_id, "co_asteroid", &asteroid);
+}
+
+
+void
+asteroid_system_reset()
+{
+  u64 asteroids_count = 0;
+  t_co_asteroid* asteroids = cast_ptr(t_co_asteroid) component_system_get("co_asteroid", &asteroids_count);
+
+  for (u64 i = 0; i < asteroids_count; i++)
+  {
+    asteroids[i].speed = asteroids[i].initial_speed;
+  }
 }
 
 

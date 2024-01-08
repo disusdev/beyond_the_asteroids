@@ -64,6 +64,7 @@ particle_system_update(f32 dt)
     {
       if (!particles[i].particles[j].enable)
       {
+        if (!component_system_entity_is_enabled(particles[i].entity_id)) continue;
         particles[i].particles[j].enable = true;
         particles[i].particles[j].alpha = 1.0f;
         particles[i].particles[j].size = 0.15f;

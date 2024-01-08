@@ -22,6 +22,8 @@
 static int WINDOW_WIDTH = 1920;
 static int WINDOW_HEIGHT = 1080;
 
+i32 score = 0;
+
 typedef enum
 {
   GAME_STATE_MENU = 0,
@@ -160,7 +162,6 @@ static cvec(t_sprite_anim) animations;
 
 t_co_ship* ship = 0;
 
-static i32 score = 0;
 
 b32 sfx_mute = false;
 b32 music_mute = false;
@@ -400,6 +401,7 @@ create_asteroid()
     component_system_create_component_by_cfg(asteroid_model_id, "co_renderer", 2);
     t_co_asteroid* asteroid = cast_ptr(t_co_asteroid) component_system_get("co_asteroid", 0);
     asteroid[asteroid_co_id].model_id = asteroid_model_id;
+    asteroid[asteroid_co_id].speed *= 1.2f;
   }
 
   component_system_set_local_transform(ent_id, MatrixTranslate(pos.x, pos.y, pos.z));
@@ -594,11 +596,13 @@ typedef struct
 
   i32 entity_id;
   i32 options_entities[6];
+  b32 blocked;
 } t_buttons_wheal;
 
 
 t_buttons_wheal menu_wheal;
 t_buttons_wheal options_wheal;
+t_buttons_wheal credits_wheal;
 
 t_buttons_wheal* current_wheal;
 
@@ -629,6 +633,12 @@ menu_options()
 }
 
 void
+menu_credits()
+{
+  current_wheal = &credits_wheal;
+}
+
+void
 menu_exit()
 {
   event_dispatch(APP_QUIT);
@@ -640,18 +650,19 @@ create_menu_wheal()
 #if defined(PLATFORM_WEB)
   t_buttons_wheal wheal =
   {
-    { "Play", "Options" },
-    { &menu_play, &menu_options },
-    2, 0, - 45 * DEG2RAD
+    { "Play", "Options", "Credits" },
+    { &menu_play, &menu_options, &menu_credits },
+    3, 0, - 45 * DEG2RAD
   };
 #else
   t_buttons_wheal wheal =
   {
-    { "Play", "Options", "Exit" },
-    { &menu_play, &menu_options, &menu_exit },
-    3, 0, - 45 * DEG2RAD
+    { "Play", "Options", "Credits", "Exit" },
+    { &menu_play, &menu_options, &menu_credits, &menu_exit },
+    4, 0, - 45 * DEG2RAD
   };
 #endif
+  wheal.blocked = false;
   
   return wheal;
 }
@@ -697,6 +708,38 @@ create_options_wheal()
     3, 0, - 45 * DEG2RAD
   };
   
+  wheal.current = 2;
+  wheal.blocked = false;
+  
+  return wheal;
+}
+
+
+void
+credits_return()
+{
+  play_once_ui(SFX_UI_BACK);
+  current_wheal = &menu_wheal;
+}
+
+
+t_buttons_wheal
+create_credits_wheal()
+{
+  t_buttons_wheal wheal =
+  {
+    { "Programming: ",
+      "Oleksandr Melnichenko",
+      "",
+      "Sound & Music: ",
+      "Aleksander Zaleski" },
+    { &credits_return, &credits_return, &credits_return, &credits_return, &credits_return },
+    5, 0, - 45 * DEG2RAD
+  };
+  
+  wheal.current = 2;
+  wheal.blocked = true;
+  
   return wheal;
 }
 
@@ -710,6 +753,9 @@ update_wheal(t_buttons_wheal* wheal)
     play_once_ui(SFX_UI_SELECT);
     wheal->options_callbacks[wheal->current]();
   }
+  
+  if (wheal->blocked) return;
+  
   if (IsKeyPressed(KEY_UP))
   {
     play_once_ui(SFX_UI_SCROLL);
@@ -860,10 +906,6 @@ game_init()
 
   t_co_ship* ships = component_system_get("co_ship", 0);
   ship = &ships[ship_co_id];
-  
-  int particle_id = component_system_create_entity(ship_id);
-  component_system_set_local_transform(particle_id, MatrixTranslate(0, 0, -2.3));
-  component_system_create_component(particle_id, "co_particle_system");
 
   t_co_gun* guns = component_system_get("co_gun", 0);
   guns[gun_id].ship = ship;
@@ -889,6 +931,7 @@ game_init()
 
   menu_wheal = create_menu_wheal();
   options_wheal = create_options_wheal();
+  credits_wheal = create_credits_wheal();
   current_wheal = &menu_wheal;
   
   space_id = component_system_create_entity(-1);
@@ -922,6 +965,7 @@ game_fixed_update(f32 dt)
 
 
 static int height = 20;
+static b32 paused_from_game = false;
 
 
 void
@@ -933,13 +977,29 @@ game_update(f32 dt)
   {
     update_wheal(current_wheal);
     ship_system_tilt_update(dt);
+    
+    if (IsKeyPressed(KEY_ESCAPE) && paused_from_game)
+    {
+      state = GAME_STATE_GAME;
+      paused_from_game = false;
+    }
+    
   } break;
   case GAME_STATE_GAME:
   {
+    if (IsKeyPressed(KEY_ESCAPE))
+    {
+      state = GAME_STATE_MENU;
+      paused_from_game = true;
+    }
+  
     if (!component_system_entity_is_enabled(ship->entity_id))
     {
       if (IsKeyPressed(KEY_SPACE))
       {
+        // @todo: reset asteroids speed
+        asteroid_system_reset();
+      
         score = 0;
         int id = component_system_pop("co_ship");
         component_system_set_local_transform(id, MatrixTranslate(0, 1, 0));

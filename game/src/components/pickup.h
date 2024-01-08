@@ -32,6 +32,7 @@ pickup_collide(t_co_collision* pickup_coll, t_co_collision* other_coll)
     component_system_push(pickup_coll->entity_id);
     play_once(SFX_SHIP_PICK_UP);
     stop_music(MUSIC_SHIP_LOW_FUEL);
+    score += 10;
   }
 }
 
